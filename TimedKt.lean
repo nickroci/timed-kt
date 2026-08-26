@@ -13,5 +13,6 @@ import TimedKt.UniversalRun
 import TimedKt.Invariance
 import TimedKt.Kt
 import TimedKt.WriteOnce
+import TimedKt.InfoTransfer
 import TimedKt.BitCost
 import TimedKt.Examples
