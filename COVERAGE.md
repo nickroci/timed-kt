@@ -57,7 +57,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | `Kt(x\|y) ≤ \|x\| + O(1)` | LV | `Kt_cond_le_length` (`Kt.lean`) | ✅ |
 | Witness upper bounds from concrete runs | — | `Kt_cond_le_of_runs`, `condKt_le_of_runs` | ✅ |
 | Finiteness ↔ producibility | — | `Kt_cond_lt_top_iff` | ✅ |
-| Triangle/composition inequality `Kt(x\|z) ≤ Kt(x\|y) + Kt(y\|z) + c` | LV | needs an explicit program combiner on the universal tape with bit-length and runtime overhead | ❌ |
+| Triangle/composition inequality `Kt(x\|z) ≤ Kt(x\|y) + Kt(y\|z) + O(log Kt(x\|y))` — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | design settled (composition as a machine primitive: a recursive comp flag with a self-delimiting split length); proof not started | ❌ |
 | Untimed description-side invariance | KC-lib | `Kolmogorov.existsIsOptimalConditional` (dependency) | ✅ upstream |
 
 ## Attainment and information transfer
@@ -107,8 +107,12 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 
 - Comparison of `Bt` with `Wt` or `Kt`: the pointwise route is closed both ways, so
   any inequality needs a genuinely different argument (or a refutation).
-- Triangle/composition inequality (the ❌ above): requires a program combiner
-  `p₁ ⊕ p₂` on the universal tape and its runtime accounting.
+- Triangle/composition inequality (the ❌ above): the settled design makes composition
+  a machine primitive (a comp flag whose tape carries a self-delimited split of two
+  programs, recursively), avoiding both code-wrapping inflation and
+  self-interpretation; the honest overhead is `O(log)` on the description side and
+  `O(log log)` on the time side. Remaining work is the construction and its
+  computability proof.
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the
   universal machine by itself); equivalently, a fuel-free self-interpreter with a
   proved linear slowdown.
