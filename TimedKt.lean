@@ -14,5 +14,6 @@ import TimedKt.Invariance
 import TimedKt.Kt
 import TimedKt.WriteOnce
 import TimedKt.InfoTransfer
+import TimedKt.Asymptotic
 import TimedKt.BitCost
 import TimedKt.Examples
