@@ -1,7 +1,9 @@
 # timed_kt — Levin-Style Timed Complexity in Lean 4
 
-A Lean 4 formalization of conditional time-bounded (Levin-style) Kolmogorov
-complexity for bitstrings:
+To our knowledge, **the first machine-checked formalization of Levin's time-bounded
+Kolmogorov complexity (`Kt`) in any proof assistant** (see Related work below): a
+Lean 4 formalization of conditional time-bounded Kolmogorov complexity for
+bitstrings,
 
 ```
 Kt_U(x | y) = min { |p| + ⌈log₂ t⌉ : U(p, y) outputs x in t transitions }
@@ -176,6 +178,19 @@ Headline theorems depend only on `propext`, `Classical.choice`, `Quot.sound`; th
 axiom gate enforces this in CI.
 
 See `COVERAGE.md` for the source-to-Lean map and the open items.
+
+## Related work
+
+Machine-checked algorithmic information theory has so far covered the *untimed*
+measures. Catt and Norrish formalize plain Kolmogorov complexity and its invariance
+theorem in HOL4 ([CPP 2021](https://dl.acm.org/doi/10.1145/3437992.3439921)); Forster,
+Kunze, and Lauermann formalize plain K in Coq via synthetic computability
+([uds-psl/coq-kolmogorov-complexity](https://github.com/uds-psl/coq-kolmogorov-complexity));
+and the [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
+Lean library this package builds on covers plain and prefix K, algorithmic
+probability, and algorithmic statistics. None of these define a time-bounded measure
+or prove a time-side simulation theorem. We are not aware of a prior machine-checked
+formalization of `Kt` in any proof assistant; corrections are welcome.
 
 ## License and attribution
 
