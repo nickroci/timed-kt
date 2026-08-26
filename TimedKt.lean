@@ -13,4 +13,5 @@ import TimedKt.UniversalRun
 import TimedKt.Invariance
 import TimedKt.Kt
 import TimedKt.WriteOnce
+import TimedKt.BitCost
 import TimedKt.Examples
