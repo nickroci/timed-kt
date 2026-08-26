@@ -183,6 +183,21 @@ theorem K_cond_le_Wt_cond (x y : BitString) :
     _ ≤ ((programLength p + ceilLog2 w : ℕ) : ENat) := by
         exact_mod_cast Nat.le_add_right _ _
 
+/-- `Wt_cond` is finite exactly on the outputs the flagged machine produces — the
+write-ledger analogue of `Kt_cond_lt_top_iff`. -/
+theorem Wt_cond_lt_top_iff {x y : BitString} :
+    Wt_cond x y < ⊤ ↔ ∃ p, produces flaggedUniversal p y x := by
+  constructor
+  · intro h
+    obtain ⟨n, hn, -⟩ := sInf_lt_iff.mp h
+    obtain ⟨p, t, w, hrun, rfl⟩ := hn
+    exact ⟨p, (flaggedRuns_iff_produces p y x).mpr
+      ⟨t, (flaggedRuns_iff_flaggedRunsW p y x t).mpr ⟨w, hrun⟩⟩⟩
+  · rintro ⟨p, hprod⟩
+    obtain ⟨t, hF⟩ := (flaggedRuns_iff_produces p y x).mp hprod
+    obtain ⟨w, hw⟩ := (flaggedRuns_iff_flaggedRunsW p y x t).mp hF
+    exact lt_of_le_of_lt (Wt_cond_le_of_flaggedRunsW hw) (ENat.natCast_lt_top _)
+
 /-- **Writes never exceed transitions.** Every timed witness is a write witness of the
 same program with a smaller ledger, so `Wt_cond ≤ Kt_cond` with no overhead. In the
 parent project this comparison against the fuel clock is only multiplicative; against
@@ -281,5 +296,11 @@ theorem Wt_cond_le_length (x y : BitString) :
     omega
   simp only [hlen, ceilLog2_one]
   omega
+
+/-- The length upper bound for the plain `Wt`: `Wt_cond_le_length` at the empty
+context. -/
+theorem Wt_le_length (x : BitString) :
+    Wt x ≤ ((programLength x + (Encodable.encode Code.left + 2) : ℕ) : ENat) :=
+  Wt_cond_le_length x []
 
 end TimedKt
