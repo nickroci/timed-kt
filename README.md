@@ -114,7 +114,7 @@ Against the transition clock the write and time prices nearly coincide:
 
 * `Wt_cond_le_Kt_cond` — writes never exceed transitions on the same run of the same
   program, so `Wt_cond ≤ Kt_cond` with no overhead;
-* `Kt_cond_le_of_universalRunsW` — transitions are linear in writes per fixed code
+* `Kt_cond_le_of_flaggedRunsW` — transitions are linear in writes per fixed code
   (`Run.steps_le`), so each write witness bounds `Kt_cond` within an additive
   `ceilLog2 (|p| + 2 * progSize (parsedCode p) + 4)`, logarithmic in the witness's
   own description data.
@@ -122,6 +122,14 @@ Against the transition clock the write and time prices nearly coincide:
 In the parent project the same comparison against the *fuel* clock is only
 multiplicative, with an unbounded conditional gap; both pathologies are properties of
 the fuel clock, not of the write ledger.
+
+The tape's second ledger is priced too: `Bt_cond x y = min { |p| + ceilLog2 b }` over
+runs whose inner trace commits `b` total bits (`TimedKt/BitCost.lean`), with the same
+commit convention, the witness bound, `K ≤ Bt`, finiteness on exactly the producible
+outputs, and the conditioning theorem at constant zero (`Bt_cond_le_Bt`). No
+inequality between `Bt` and `Wt` or `Kt` is claimed in either direction: a single
+write can carry arbitrarily many bits and a written `0` carries none, so per-run
+ledger domination fails both ways.
 
 ## Difference from the legacy fuel measure
 
@@ -144,12 +152,14 @@ the two operational ledgers, not a write/`Kt` equivalence claim.
 ## Building and auditing
 
 ```
-lake exe cache get   # mathlib cache
-lake build           # builds with mathlib's standard linter set enabled
-./scripts/audit.sh   # forbidden constructs, sorry-freedom, suppression check
+lake exe cache get         # mathlib cache
+lake build                 # builds with mathlib's standard linter set enabled
+./scripts/audit.sh         # forbidden constructs, sorry-freedom, suppression check
+./scripts/check_axioms.sh  # axiom gate over the headline theorems (needs the oleans)
 ```
 
-Headline theorems depend only on `propext`, `Classical.choice`, `Quot.sound`.
+Headline theorems depend only on `propext`, `Classical.choice`, `Quot.sound`; the
+axiom gate enforces this in CI.
 
 See `COVERAGE.md` for the source-to-Lean map and the open items.
 

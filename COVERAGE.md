@@ -58,12 +58,14 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Write ledger of the universal machine; uniqueness of `(x, t, w)` | parent V2 | `UniversalRunsW`, `UniversalRunsW.unique` (`WriteOnce.lean`) | ✅ |
 | Write-priced complexity `Wt_cond`, `Wt` (`min {\|p\| + ⌈log₂ w⌉}`) | parent `writeLevin` | `Wt_cond`, `Wt` (`WriteOnce.lean`) | ✅ |
 | `Wt ≤ Kt` — additive, zero overhead (vs. multiplicative-only against the fuel clock) | new here | `Wt_cond_le_Kt_cond`, `Wt_le_Kt` | ✅ |
-| `Kt ≤` write witness `+ O(log description)` per witness | new here | `Kt_cond_le_of_universalRunsW` | ✅ |
-| `K ≤ Wt`; `Wt(x\|y) ≤ \|x\| + c` with explicit `c` | parent `K_le_writeLevin` | `K_cond_le_Wt_cond`, `Wt_cond_le_length` | ✅ |
+| Finiteness ↔ producibility for the write measure | — | `Wt_cond_lt_top_iff` | ✅ |
+| `Kt ≤` write witness `+ O(log description)` per witness | new here | `Kt_cond_le_of_flaggedRunsW` | ✅ |
+| `K ≤ Wt`; `Wt(x\|y) ≤ \|x\| + c` with explicit `c` | parent `K_le_writeLevin` | `K_cond_le_Wt_cond`, `Wt_cond_le_length`, `Wt_le_length` | ✅ |
 | Bit-content ledger and production-dominates-output | parent V2 | `traceBits`, `size_output_le_traceBits` (`Trace.lean`) | ✅ |
 | Write/transition separation instance (linear, not unbounded) | parent V2 | `precLoop_ledgers` (`Examples.lean`) | ✅ |
 | Measure-level `Kt ≤ Wt + O(1)` (uniform additive constant) | open in parent | as open against the step clock as against fuel; the per-witness log penalty is the proven form | ❌ |
-| Bit-priced (`traceBits`) complexity measure | parent V2 | not defined here | ➖ (route exists via `UniversalRunsW`) |
+| Bit-priced (`traceBits`) complexity measure: `Bt_cond`, `Bt`; ledger forgetting; uniqueness of `(x, t, b)`; witness bound; `K ≤ Bt`; finiteness ↔ producibility; conditioning constant `0` | parent V2 | `UniversalRunsB`, `FlaggedRunsB`, `Bt_cond`, `Bt`, `Bt_cond_le_of_flaggedRunsB`, `K_cond_le_Bt_cond`, `Bt_cond_lt_top_iff`, `Bt_cond_le_Bt` (`BitCost.lean`) | ✅ |
+| Comparison of `Bt` with `Wt` or `Kt` (either direction) | — | per-run ledger domination fails both ways (unbounded `Nat.size` up, `Nat.size 0 = 0` down); no measure-level route proved | ❌ |
 
 ## The legacy fuel measure (regression layer)
 
@@ -75,9 +77,17 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Writes/transitions linearly equivalent per fixed code | parent project | `Run.length_le_steps`, `Run.steps_le`, `Run.sandwich` | ✅ |
 | Full fuel-priced `FuelKt` measure (renamed old `Kt`, chain rule, log-relativization) | parent project | not ported; lives in the parent tree under its old names | ➖ (port on demand) |
 
+## Hygiene and CI
+
+| Check | Lean / script | Status |
+|---|---|---|
+| Headline theorems depend only on `propext`, `Classical.choice`, `Quot.sound` | `scripts/check_axioms.sh` (CI step after the build) | ✅ |
+
 ## Open items
 
-- Triangle/composition inequality (the one ❌ above): requires a program combiner
+- Comparison of `Bt` with `Wt` or `Kt`: the pointwise route is closed both ways, so
+  any inequality needs a genuinely different argument (or a refutation).
+- Triangle/composition inequality (the ❌ above): requires a program combiner
   `p₁ ⊕ p₂` on the universal tape and its runtime accounting.
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the
   universal machine by itself); equivalently, a fuel-free self-interpreter with a
