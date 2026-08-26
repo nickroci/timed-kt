@@ -1,0 +1,21 @@
+name = "timed_kt"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["TimedKt"]
+
+[leanOptions]
+pp.unicode.fun = true
+relaxedAutoImplicit = false
+weak.linter.mathlibStandardSet = true
+maxSynthPendingDepth = 3
+
+# Untimed algorithmic-information layer: Alexey Milovanov's kolmogorov_complexity
+# (Apache-2.0), pinned to an exact upstream commit on Lean/Mathlib v4.33.0.
+# We import only Core.Basic, Core.UniversalDecompressor, and Core.Invariance.
+[[require]]
+name = "kolmogorov_complexity"
+git = "https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean"
+rev = "f11c8f01e90a41e18fdc97f31561a04712dc699c"
+
+[[lean_lib]]
+name = "TimedKt"
