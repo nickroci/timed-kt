@@ -273,4 +273,32 @@ theorem ttKtRate_eq_zero_of_witnesses {f : BitString → Bool} {g T : ℕ → �
     ttKtRate f = 0 :=
   ktRate_eq_zero_of_witnesses h hg hT
 
+/-! ### The write-measure analogue -/
+
+/-- The write-measure profile: `Wt` of the length-`n` prefix, as a natural number —
+grounded by `Wt_lt_top`. -/
+noncomputable def wtProfile (Z : ℕ → Bool) (n : ℕ) : ℕ :=
+  (Wt (seqPrefix Z n)).toNat
+
+/-- The write profile carries the full `ENat` value of the write measure. -/
+theorem wtProfile_cast (Z : ℕ → Bool) (n : ℕ) :
+    (wtProfile Z n : ENat) = Wt (seqPrefix Z n) :=
+  ENat.natCast_toNat (Wt_lt_top _).ne
+
+/-- The **write-measure rate**: the limsup density of the write profile. -/
+noncomputable def wtRate (Z : ℕ → Bool) : ℝ≥0∞ :=
+  atTop.limsup fun n => (wtProfile Z n : ℝ≥0∞) / n
+
+/-- The write profile never exceeds the time profile: pointwise from `Wt_le_Kt`,
+transported through `toNat` by finiteness. -/
+theorem wtProfile_le_ktProfile (Z : ℕ → Bool) (n : ℕ) :
+    wtProfile Z n ≤ ktProfile Z n :=
+  ENat.toNat_le_toNat (Wt_le_Kt _) (Kt_lt_top _).ne
+
+/-- Rate comparison: `wtRate Z ≤ ktRate Z` — the limsup of a pointwise-dominated
+density is dominated. -/
+theorem wtRate_le_ktRate (Z : ℕ → Bool) : wtRate Z ≤ ktRate Z :=
+  limsup_le_limsup (Eventually.of_forall fun n =>
+    ENNReal.div_le_div_right (Nat.cast_le.mpr (wtProfile_le_ktProfile Z n)) n)
+
 end TimedKt
