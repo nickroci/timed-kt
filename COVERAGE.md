@@ -75,7 +75,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Fuel diverges unboundedly from writes | parent project | `fuel_exceeds_writes_unboundedly` | ✅ |
 | Successor: constant transitions, linear fuel | parent project | `succ_transitions_constant_fuel_linear` (`Examples.lean`) | ✅ |
 | Writes/transitions linearly equivalent per fixed code | parent project | `Run.length_le_steps`, `Run.steps_le`, `Run.sandwich` | ✅ |
-| Full fuel-priced `FuelKt` measure (renamed old `Kt`, chain rule, log-relativization) | parent project | not ported; lives in the parent tree under its old names | ➖ (port on demand) |
+| Full fuel-priced `FuelKt` measure (renamed old `Kt`, chain rule, log-relativization) | parent project | lives in the parent tree as `FuelKt`/`FuelKt_cond`/`fuelCost` (`FuelKt.lean`; rename done); not ported here beyond `minFuel` | ➖ (port on demand) |
 
 ## Hygiene and CI
 
