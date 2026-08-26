@@ -6,12 +6,23 @@ exists, build on the named theorems instead of re-deriving them.
 
 Sources:
 
-- **Levin73** — L. Levin, *Universal sequential search problems* (1973): the `Kt`
-  measure and its machine-invariance.
-- **LV** — Li, Vitányi, *An Introduction to Kolmogorov Complexity and Its
-  Applications*: standard facts about K and time-bounded K.
-- **KC-lib** — the `kolmogorov_complexity` library (pinned dependency): the untimed
-  layer this package builds on.
+- **Levin73** — L. A. Levin, *Universal sequential search problems*, Problemy
+  Peredachi Informatsii 9(3):115–116, 1973
+  ([bibliographic record](https://www.mathnet.ru/eng/ppi914)): the `Kt` measure and
+  its machine-invariance.
+- **LV** — M. Li and P. Vitányi, *An Introduction to Kolmogorov Complexity and Its
+  Applications*, 3rd ed., Springer 2008; resource-bounded complexity is Chapter 7
+  (Kt and universal search, §7.5): standard facts about K and time-bounded K.
+- **KC-lib** — the
+  [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
+  library, pinned at commit `f11c8f01` (see `lake-manifest.json`): the untimed layer
+  this package builds on.
+- **Parent** — the private parent research development (`irreducibility`, a Lean 4.27
+  tree, not published), from which the `tracen`/`Run` layer was ported; its
+  fuel-measure results cited below live there under the `FuelKt` names as of its
+  commit `6c25462`. Rows sourced "parent V2" / "parent `writeLevin`" /
+  "parent project" refer to modules of that tree. Parent results are context, not
+  theorems of this package.
 
 Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖ out of scope.
 
@@ -94,5 +105,6 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
   proved linear slowdown.
 - Exact `Kt` values for small concrete strings (`native_decide`-free evaluation
   strategy needed).
-- Migration of the parent `irreducibility` tree onto this package (renaming its
-  fuel-priced `Kt` family per `KT_CORRECTION_TODO.md` step 1).
+- Long-term: re-basing the parent tree's leakage/SoI/amortization results onto this
+  package's corrected measure. (The parent tree's own quarantine rename — its fuel
+  measure is now `FuelKt` — is complete as of its commit `6c25462`.)

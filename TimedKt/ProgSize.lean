@@ -14,7 +14,7 @@ that this package has no dependency on that tree.
 
 `progSize` is a constructor count, not a bit-length. In this package it appears only in
 the operational step ledger (`TimedKt.Run`), where it calibrates the write/step exchange
-rate, and in the fuel-priced legacy measure (`TimedKt.FuelCost`). The public timed
+rate, and in the write-witness penalty of `TimedKt.WriteOnce`. The public timed
 complexity `Kt` measures program length as the bit-length of an actual bitstring program
 (`Kolmogorov.BitString`) and does not mention `progSize`.
 -/

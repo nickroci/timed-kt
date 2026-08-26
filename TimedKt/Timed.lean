@@ -39,8 +39,12 @@ namespace TimedKt
 open Kolmogorov
 
 /-- A **timed decompressor**: a decompressor together with an operational relation
-recording exact transition counts. `Runs p y x t` reads: on program `p` and context
-`y`, the machine halts with output `x` after exactly `t` transitions. -/
+recording transition counts. `Runs p y x t` reads: on program `p` and context `y`,
+the machine halts with output `x` after `t` transitions. The interface does not force
+`t` to be unique per `(p, y)` — a machine may record several runs, and `condKt` prices
+the cheapest; output uniqueness is inherited from the semantic layer
+(`Runs.output_unique`). The concrete machines of this package do prove time
+uniqueness (`UniversalRuns.unique`, `FlaggedRuns.unique`). -/
 structure TimedDecompressor where
   /-- The underlying semantic map `(program, context) →. output`. -/
   toMap : Map

@@ -19,5 +19,8 @@ jobs:
       - name: Build (with mathlib cache)
         uses: leanprover/lean-action@v1
 
+      - name: Strict warning gate
+        run: ./scripts/strict_lint.sh
+
       - name: Axiom gate
         run: ./scripts/check_axioms.sh

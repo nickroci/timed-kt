@@ -32,6 +32,12 @@ remaining tape and the selected context:
 * `flaggedUniversal (true :: p, y) = universalDecompressor (p, [])` — context erased;
 * `flaggedUniversal (false :: p, y) = universalDecompressor (p, y)` — context passed.
 
+One edge of the parse is worth stating: the zero delimiter of the unary prefix is
+not formally required — on an all-ones tape the prefix value is the whole tape
+length and the program remainder is empty (end of tape acts as the delimiter, and
+the scan is still charged `i + 1` transitions). This matches the underlying
+library's parser exactly.
+
 The flag costs one bit and one transition and buys the conditioning theorem with
 additive constant zero (see below). Choosing a universal machine with this closure
 property is the standard resolution: without it, erasing the context requires either
@@ -72,11 +78,15 @@ zero — a plain-complexity witness runs with empty context, so flipping its fla
 `true` gives a conditional witness of the same length and transition count. The same
 holds for the write measure (`Wt_cond_le_Wt`).
 
-Contrast: for the parent project's fuel-priced measure even the constant-overhead
-form `Kt(x | y) ≤ Kt(x) + C` is refuted
-(`PredecessorSeparation.not_Kt_cond_le_Kt_add_const`), because `evaln` fuel taxes the
-mere receipt of the conditioning input. The relativization behavior of the corrected
-measure is the textbook one; the failure was a property of the fuel clock.
+Contrast: in the parent research development (a separate, private Lean tree; see
+COVERAGE.md's "Parent" source) even the constant-overhead form
+`FuelKt(x | y) ≤ FuelKt(x) + C` is refuted for its fuel-priced measure
+(`not_FuelKt_cond_le_FuelKt_add_const` in its `PredecessorSeparation.lean`), because
+`evaln` fuel taxes the mere receipt of the conditioning input. That refutation is an
+external result, not formalized in this package; what this package proves is the
+per-computation fuel/work divergence behind it (`fuel_exceeds_writes_unboundedly`,
+`succ_transitions_constant_fuel_linear`). The relativization behavior of the
+corrected measure is the textbook one; the failure was a property of the fuel clock.
 
 ## Invariance scope
 
@@ -115,13 +125,14 @@ Against the transition clock the write and time prices nearly coincide:
 * `Wt_cond_le_Kt_cond` — writes never exceed transitions on the same run of the same
   program, so `Wt_cond ≤ Kt_cond` with no overhead;
 * `Kt_cond_le_of_flaggedRunsW` — transitions are linear in writes per fixed code
-  (`Run.steps_le`), so each write witness bounds `Kt_cond` within an additive
-  `ceilLog2 (|p| + 2 * progSize (parsedCode p) + 4)`, logarithmic in the witness's
-  own description data.
+  (`Run.steps_le`), so each write witness on a tape `s` bounds `Kt_cond` within an
+  additive `ceilLog2 (|s| + 2 * progSize (parsedCode s.tail) + 4)` (the tail drops
+  the context flag), logarithmic in the witness's own description data.
 
-In the parent project the same comparison against the *fuel* clock is only
-multiplicative, with an unbounded conditional gap; both pathologies are properties of
-the fuel clock, not of the write ledger.
+In the parent research development the same comparison against the *fuel* clock is
+only multiplicative, with an unbounded conditional gap (its `writeLevin_le_Kt_mul`
+and `Kt_cond_writeLevin_cond_gap_unbounded` — external results, not formalized
+here); both pathologies are properties of the fuel clock, not of the write ledger.
 
 The tape's second ledger is priced too: `Bt_cond x y = min { |p| + ceilLog2 b }` over
 runs whose inner trace commits `b` total bits (`TimedKt/BitCost.lean`), with the same
@@ -144,8 +155,11 @@ cost as `minFuel` (`TimedKt/FuelCost.lean`) together with the regression theorem
 * `succ_transitions_constant_fuel_linear` — the successor makes `1` transition for
   every input, while its fuel is `N + 1`.
 
-The public `Kt` (`TimedKt/Kt.lean`) imports neither `minFuel` nor `progSize`; the two
-measures meet only in `TimedKt/Examples.lean`, to be compared. `Run.sandwich` records
+The definitions of `Kt` and `Kt_cond` mention neither fuel nor constructor size, and
+the fuel module `FuelCost.lean` is outside `Kt.lean`'s import closure (`progSize`
+does occur transitively, in the `Run` step ledger and the write-witness penalty —
+never in the measure's definition); the two measures meet only in
+`TimedKt/Examples.lean`, to be compared. `Run.sandwich` records
 the write/transition exchange rate (linear per fixed code); it is a statement about
 the two operational ledgers, not a write/`Kt` equivalence claim.
 

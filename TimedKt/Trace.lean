@@ -383,9 +383,9 @@ theorem numWrites_of_tracen {c : Code} {input k : ℕ} {L : List ℕ}
 
 /-- The **write bits**: the total bit-length (`Nat.size`) of the values committed to
 the canonical write-once tape, or `⊤` if `c` never halts. `numWrites` and `traceBits`
-are the two ledgers of the write-once tape — event count and information content;
-they bracket a physical bit-tape, which `Code` over-charges by materializing whole
-naturals atomically. -/
+are the two ledgers of the write-once tape — event count and bit content. Neither
+dominates the other pointwise (`Nat.size 0 = 0`, while a single write can carry
+arbitrarily many bits); no physical-tape cost is defined or bounded here. -/
 noncomputable def traceBits (c : Code) (input : ℕ) : ℕ∞ :=
   match canonTrace c input with
   | Option.some L => ((L.map Nat.size).sum : ℕ∞)
