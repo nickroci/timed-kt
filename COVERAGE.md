@@ -60,6 +60,17 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Triangle/composition inequality `Kt(x\|z) ≤ Kt(x\|y) + Kt(y\|z) + c` | LV | needs an explicit program combiner on the universal tape with bit-length and runtime overhead | ❌ |
 | Untimed description-side invariance | KC-lib | `Kolmogorov.existsIsOptimalConditional` (dependency) | ✅ upstream |
 
+## Attainment and information transfer
+
+| Result | Source | Lean | Status |
+|---|---|---|---|
+| Attainment: a finite `condKt` is attained by an actual run | — | `TimedDecompressor.exists_runs_condKt` (`InfoTransfer.lean`) | ✅ |
+| Everywhere-finiteness of the public measures | — | `Kt_cond_lt_top`, `Kt_lt_top`, `Wt_lt_top` (`InfoTransfer.lean`) | ✅ |
+| Witness runtime bound: an optimal run within `2 ^ Kt(x\|y)` transitions | — | `exists_run_time_le_two_pow_Kt_cond` (`InfoTransfer.lean`) | ✅ |
+| Information transfer `Kt(x) − Kt(x\|y)`, analogue of `I(y : x) = K(x) − K(x\|y)` | LV | `ktTransfer`, `ktTransfer_add_Kt_cond`, `ktTransfer_le_Kt`, `ktTransfer_lt_top`, `ktTransfer_empty` (`InfoTransfer.lean`) | ✅ |
+| Transfer halves runtime: `Kt(x) = m` and transfer `g` give a run within `2 ^ (m − g)` | — | `exists_run_time_le_two_pow_of_ktTransfer` (`InfoTransfer.lean`) | ✅ |
+| Information transfer for the write measure | — | `wtTransfer`, `wtTransfer_add_Wt_cond`, `wtTransfer_le_Wt`, `wtTransfer_lt_top`, `wtTransfer_empty` (`InfoTransfer.lean`) | ✅ |
+
 ## The write-once ledger
 
 | Result | Source | Lean | Status |

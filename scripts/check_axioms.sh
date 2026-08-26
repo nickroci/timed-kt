@@ -10,6 +10,8 @@ cd "$(dirname "$0")/.."
 THEOREMS=(
   TimedKt.Kt_cond_le_Kt
   TimedKt.Wt_cond_le_Wt
+  TimedKt.TimedDecompressor.exists_runs_condKt
+  TimedKt.ktTransfer_add_Kt_cond
   TimedKt.condKt_timedUniversal_le
   TimedKt.Kt_cond_le_realized
   TimedKt.Kt_cond_le_length

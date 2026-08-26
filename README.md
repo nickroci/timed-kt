@@ -88,6 +88,16 @@ conditioning. This package proves the underlying fuel/work divergence
 (`fuel_exceeds_writes_unboundedly`, `succ_transitions_constant_fuel_linear`); the
 relativization behavior of the transition-clocked measure is the textbook one.
 
+Free conditioning makes the transfer quantity `Kt(x) − Kt(x | y)` — the time-bounded
+analogue of `I(y : x) = K(x) − K(x | y)` — well-defined with no context-size
+correction term (`ktTransfer`, `TimedKt/InfoTransfer.lean`): it is nonnegative by
+construction and satisfies `ktTransfer y x + Kt(x | y) = Kt(x)` exactly. A finite
+`condKt` is attained by an actual run (`TimedDecompressor.exists_runs_condKt`), so
+the optimal description length bounds the honest runtime — a witness for `x` from `y`
+runs within `2 ^ Kt(x | y)` transitions, and every bit of transferred information
+halves that worst-case runtime (`exists_run_time_le_two_pow_of_ktTransfer`). The
+write measure supports the same construction (`wtTransfer`).
+
 ## Invariance scope
 
 `condKt_timedUniversal_le` (`TimedKt/Invariance.lean`): for every timed decompressor
