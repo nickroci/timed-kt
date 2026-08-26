@@ -20,6 +20,8 @@ THEOREMS=(
   TimedKt.universalRuns_iff_produces
   TimedKt.Run.deterministic
   TimedKt.fuel_exceeds_writes_unboundedly
+  TimedKt.ktRate_le_one
+  TimedKt.ktRate_eq_zero_of_witnesses
 )
 
 tmpdir="$(mktemp -d)"

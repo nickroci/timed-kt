@@ -8,26 +8,48 @@ import Mathlib.Topology.Order.LiminfLimsup
 import TimedKt.InfoTransfer
 
 /-!
-# The Asymptotic Layer: Complexity Profiles of Infinite Sequences
+# The Asymptotic Layer: Complexity Rates of Infinite Sequences
 
 Single-instance `Kt` admits hardcoding: `Kt(x) ≤ |x| + O(1)` (`Kt_cond_le_length`), so
 per-instance optimality cannot separate computing an output from printing it, and for a
 one-bit output even the conditional complexity is `O(1)` outright. The standard
 resolution measures a whole output family at once: fix an infinite sequence
 `Z : ℕ → Bool` and track the complexity of its finite prefixes as a function of their
-length. This is the convention of constructive dimension, where the density of
-`K(Z↾n)` in `n` characterizes the effective Hausdorff dimension of `Z` (J. H. Lutz,
-*Dimension in complexity classes*, SIAM J. Comput. 32(5), 2003; the Kolmogorov-complexity
-characterization is due to E. Mayordomo, Inf. Process. Lett. 84(1), 2002).
+length. The rate built here is the time-bounded sibling of the prefix-complexity
+densities of constructive dimension (J. H. Lutz, *Dimension in complexity classes*,
+SIAM J. Comput. 32(5), 2003; the Kolmogorov-complexity characterization of effective
+dimension is due to E. Mayordomo, Inf. Process. Lett. 84(1), 2002, and the `limsup`
+form used here corresponds to the strong dimension of Athreya, Hitchcock, Lutz, and
+Mayordomo, SIAM J. Comput. 37(3), 2007). Measuring a Boolean function through the
+complexity of its truth table is the meta-complexity convention (E. Allender,
+H. Buhrman, M. Koucký, D. van Melkebeek, D. Ronneburger, *Power from random strings*,
+SIAM J. Comput. 35(6), 2006).
 
-This module builds the profile and its rate: `seqPrefix Z n` is the length-`n` prefix
-of `Z` as a bitstring, `ktProfile Z n` is its `Kt`, landed in `ℕ` — well-grounded
-because the public measure is everywhere finite (`Kt_lt_top`) — and `ktRate Z` is the
-limsup density `limsup_n (ktProfile Z n / n)` in `ℝ≥0∞`. The hardcode bound transfers:
-`ktProfile Z n ≤ n + c` for a universal constant `c` (`ktProfile_le`), so the profile of
-every sequence, however uncomputable, grows at most linearly and the rate never exceeds
-the ceiling `1` (`ktRate_le_one`). Separations therefore cannot live in upper bounds on
-single prefixes; they live in the growth rate of the profile.
+## Main definitions
+
+* `seqPrefix Z n` — the length-`n` prefix of `Z` as a bitstring;
+* `ktProfile Z n` — `Kt` of that prefix, landed in `ℕ` (grounded by `Kt_lt_top`);
+* `ktRate Z` — the limsup density `limsup_n (ktProfile Z n / n)` in `ℝ≥0∞`;
+* `truthTableSeq f`, `ttKtRate f` — the truth-table sequence and rate of a Boolean
+  function on bitstrings, through the canonical enumeration `bitStringEnum`;
+* `wtProfile`, `wtRate` — the same construction over the write measure `Wt`.
+
+## Main results
+
+* `ktProfile_le` / `ktRate_le_one` — **the hardcode ceiling**: the profile grows at
+  most linearly (`ktProfile Z n ≤ n + c`), so every sequence, however uncomputable,
+  has rate at most `1`.
+* `ktRate_eq_zero_of_witnesses` — **the generator collapse**: prefix witnesses with
+  vanishing description density and vanishing log-runtime density force the rate to
+  `0`; `ktRate_eq_zero_of_code` is the fixed-code form, whose unary-prefix constant
+  is absorbed by the density hypotheses.
+* `wtRate_le_ktRate` — the write rate is dominated by the time rate, from `Wt_le_Kt`.
+
+Between the ceiling and the collapse lies the layer's point: hardcoding is priced at
+the rate level, so separations invisible per instance become visible as densities. A
+sequence of positive `Kt`-rate and zero `K`-rate would exhibit computational depth as
+a density; no such separation is claimed here — this module provides the definitions
+and the two bracketing theorems.
 -/
 
 open Filter Kolmogorov Nat.Partrec Topology

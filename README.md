@@ -153,6 +153,40 @@ inequality between `Bt` and `Wt` or `Kt` is claimed in either direction: a singl
 write can carry arbitrarily many bits and a written `0` carries none, so per-run
 ledger domination fails both ways.
 
+## The asymptotic layer
+
+Single-instance `Kt` admits hardcoding — `Kt(x | y) ≤ |x| + O(1)`
+(`Kt_cond_le_length`) — so per-instance optimality cannot separate computing an output
+from printing it, and for a one-bit output even the conditional complexity is `O(1)`
+outright. The standard resolution measures a whole output family:
+`TimedKt/Asymptotic.lean` fixes an infinite sequence `Z : ℕ → Bool` and tracks the
+profile `ktProfile Z n = Kt(Z↾n)` (a natural number — the measure is everywhere
+finite) and its limsup density `ktRate Z = limsup ktProfile Z n / n`, valued in
+`ℝ≥0∞`. The rate is the time-bounded sibling of the prefix-complexity densities of
+constructive dimension (Lutz's dimension in complexity classes; Mayordomo's Kolmogorov
+characterization; the `limsup` form corresponds to the strong dimension of Athreya,
+Hitchcock, Lutz, and Mayordomo), and measuring a Boolean function through its truth
+table — `truthTableSeq`, `ttKtRate`, via the canonical enumeration
+`bitStringEnum : ℕ ≃ BitString` — is the meta-complexity convention of Allender,
+Buhrman, Koucký, van Melkebeek, and Ronneburger.
+
+Two theorems bracket the rate. Hardcoding pins it at the ceiling: `ktRate Z ≤ 1` for
+every sequence, however uncomputable (`ktRate_le_one`). A uniform generator collapses
+it: if runs of the flagged machine produce every prefix with description length at
+most `g n` and runtime at most `T n`, and the densities `g n / n` and
+`ceilLog2 (T n) / n` both vanish, then `ktRate Z = 0`
+(`ktRate_eq_zero_of_witnesses`; the fixed-code form `ktRate_eq_zero_of_code` feeds a
+single `Nat.Partrec.Code` an input-tape family, the code's unary prefix entering as a
+constant absorbed by the density hypotheses). Algorithms are therefore visible at the
+rate level even though every single prefix admits the printing bound. The write
+measure supports the same construction (`wtProfile`, `wtRate`), with
+`wtRate ≤ ktRate` (`wtRate_le_ktRate`).
+
+What is **not** claimed: any sequence separating the `Kt`-rate from the untimed
+`K`-rate. A sequence of positive `Kt`-rate and zero `K`-rate would exhibit
+computational depth as a density; the package proves the two bracketing theorems
+only.
+
 ## Why the clock is transitions, not fuel
 
 The obvious first candidate for a runtime notion over `Nat.Partrec.Code` is

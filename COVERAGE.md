@@ -17,6 +17,18 @@ Sources:
   [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
   library, pinned at commit `f11c8f01` (see `lake-manifest.json`): the untimed layer
   this package builds on.
+- **Lutz03** — J. H. Lutz, *Dimension in complexity classes*, SIAM J. Comput.
+  32(5):1236–1259, 2003: resource-bounded (constructive/effective) dimension. The
+  Kolmogorov-complexity characterization of constructive dimension as
+  `liminf K(Z↾n)/n` is E. Mayordomo, *A Kolmogorov complexity characterization of
+  constructive Hausdorff dimension*, Inf. Process. Lett. 84(1):1–3, 2002; the
+  `limsup` form corresponds to the strong dimension of K. B. Athreya,
+  J. M. Hitchcock, J. H. Lutz, and E. Mayordomo, *Effective strong dimension in
+  algorithmic information and computational complexity*, SIAM J. Comput.
+  37(3):671–705, 2007.
+- **ABKMR** — E. Allender, H. Buhrman, M. Koucký, D. van Melkebeek,
+  D. Ronneburger, *Power from random strings*, SIAM J. Comput. 35(6):1467–1493,
+  2006: measuring a function family through the complexity of its truth table.
 
 Rows with source "—" are constructions of this package (the operational ledgers, the
 fuel comparison layer, and the write/bit-priced measures) rather than formalizations
@@ -87,6 +99,20 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Bit-priced (`traceBits`) complexity measure: `Bt_cond`, `Bt`; ledger forgetting; uniqueness of `(x, t, b)`; witness bound; `K ≤ Bt`; finiteness ↔ producibility; conditioning constant `0` | — | `UniversalRunsB`, `FlaggedRunsB`, `Bt_cond`, `Bt`, `Bt_cond_le_of_flaggedRunsB`, `K_cond_le_Bt_cond`, `Bt_cond_lt_top_iff`, `Bt_cond_le_Bt` (`BitCost.lean`) | ✅ |
 | Comparison of `Bt` with `Wt` or `Kt` (either direction) | — | per-run ledger domination fails both ways (unbounded `Nat.size` up, `Nat.size 0 = 0` down); no measure-level route proved | ❌ |
 
+## The asymptotic layer
+
+| Result | Source | Lean | Status |
+|---|---|---|---|
+| Sequence prefixes with length and prefix-monotonicity | — | `seqPrefix`, `seqPrefix_length`, `seqPrefix_prefix` (`Asymptotic.lean`) | ✅ |
+| The `ℕ`-valued profile `Kt(Z↾n)`, grounded by finiteness, with the `ENat` bridge | — | `ktProfile`, `ktProfile_cast` | ✅ |
+| Hardcode ceiling at the profile: `ktProfile Z n ≤ n + c` | LV (length upper bound) | `ktProfile_le` | ✅ |
+| The rate `limsup Kt(Z↾n)/n` in `ℝ≥0∞` | Lutz03 (constructive dimension), time-bounded analogue | `ktRate` | ✅ |
+| Rate ceiling: `ktRate Z ≤ 1` for every sequence | Lutz03, time-bounded analogue of the dimension ceiling | `ktRate_le_one` | ✅ |
+| Generator collapse: vanishing description and log-runtime densities force rate `0` | — | `ktRate_eq_zero_of_witnesses`; fixed-code form `ktRate_eq_zero_of_code` | ✅ |
+| Truth-table framing: canonical enumeration, truth-table sequence and rate | ABKMR (meta-complexity convention) | `bitStringEnum`, `truthTableSeq`, `ttKtRate`, `ttKtRate_le_one`, `ttKtRate_eq_zero_of_witnesses` | ✅ |
+| Write-measure rate and its comparison to the time rate | — | `wtProfile`, `wtProfile_cast`, `wtRate`, `wtRate_le_ktRate` | ✅ |
+| A sequence of positive `Kt`-rate and zero `K`-rate (computational depth as a density) | — | not constructed; the layer provides only the bracketing theorems | ❌ |
+
 ## The fuel clock (the rejected alternative)
 
 | Result | Source | Lean | Status |
@@ -118,3 +144,6 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
   proved linear slowdown.
 - Exact `Kt` values for small concrete strings (`native_decide`-free evaluation
   strategy needed).
+- A `Kt`-rate/`K`-rate separation (the ❌ in the asymptotic layer): exhibiting a
+  sequence of positive `Kt`-rate and zero `K`-rate needs an untimed `K`-rate layer
+  and a depth construction; neither is started.
