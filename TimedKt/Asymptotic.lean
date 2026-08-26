@@ -30,7 +30,7 @@ the ceiling `1` (`ktRate_le_one`). Separations therefore cannot live in upper bo
 single prefixes; they live in the growth rate of the profile.
 -/
 
-open Filter Kolmogorov Topology
+open Filter Kolmogorov Nat.Partrec Topology
 
 open scoped ENNReal
 
@@ -125,5 +125,117 @@ theorem ktRate_le_one (Z : ℕ → Bool) : ktRate Z ≤ 1 := by
   calc ktRate Z
       ≤ atTop.limsup fun n : ℕ => 1 + (c : ℝ≥0∞) / n := limsup_le_limsup hev
     _ = 1 := hlim.limsup_eq
+
+/-! ### The generator collapse -/
+
+/-- **The generator collapse.** If every prefix of `Z` is produced by some run of the
+flagged machine with program length at most `g n` and transition count at most `T n`,
+and both densities `g n / n` and `ceilLog2 (T n) / n` vanish — sublinear description
+and subexponential time — then `ktRate Z = 0`. Hardcoding pins the rate at the ceiling
+`1` (`ktRate_le_one`); a uniform generator collapses it to `0`, so algorithms are
+visible at the rate level even though every single prefix admits the printing bound. -/
+theorem ktRate_eq_zero_of_witnesses {Z : ℕ → Bool} {g T : ℕ → ℕ}
+    (h : ∀ n, ∃ p t, FlaggedRuns p [] (seqPrefix Z n) t ∧
+      programLength p ≤ g n ∧ t ≤ T n)
+    (hg : Tendsto (fun n => (g n : ℝ≥0∞) / n) atTop (𝓝 0))
+    (hT : Tendsto (fun n => (ceilLog2 (T n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    ktRate Z = 0 := by
+  have hbound : ∀ n, ktProfile Z n ≤ g n + ceilLog2 (T n) := by
+    intro n
+    obtain ⟨p, t, hrun, hp, ht⟩ := h n
+    refine ktProfile_le_of_Kt_le ?_
+    calc Kt (seqPrefix Z n)
+        = Kt_cond (seqPrefix Z n) [] := (Kt_cond_empty _).symm
+      _ ≤ ((programLength p + ceilLog2 t : ℕ) : ENat) := Kt_cond_le_of_runs hrun
+      _ ≤ ((g n + ceilLog2 (T n) : ℕ) : ENat) :=
+          Nat.cast_le.mpr (Nat.add_le_add hp (ceilLog2_mono ht))
+  have hle : ∀ n : ℕ, (ktProfile Z n : ℝ≥0∞) / n ≤
+      (g n : ℝ≥0∞) / n + (ceilLog2 (T n) : ℝ≥0∞) / n := by
+    intro n
+    calc (ktProfile Z n : ℝ≥0∞) / n
+        ≤ ((g n + ceilLog2 (T n) : ℕ) : ℝ≥0∞) / n :=
+          ENNReal.div_le_div_right (Nat.cast_le.mpr (hbound n)) n
+      _ = (g n : ℝ≥0∞) / n + (ceilLog2 (T n) : ℝ≥0∞) / n := by
+          rw [Nat.cast_add, ENNReal.add_div]
+  have hlim : Tendsto (fun n => (ktProfile Z n : ℝ≥0∞) / n) atTop (𝓝 0) := by
+    have hsum := hg.add hT
+    rw [add_zero] at hsum
+    exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum
+      (fun _ => zero_le) hle
+  exact hlim.limsup_eq
+
+/-! ### The fixed-code form
+
+A generator is most naturally given as a single `Nat.Partrec.Code` fed a family of
+input tapes. The corollary `ktRate_eq_zero_of_code` packages such a family into the
+witness form: the code enters the program through its unary prefix, a constant
+contribution absorbed by the vanishing-density hypotheses. -/
+
+/-- Additive constants are invisible to vanishing densities: if `u n / n → 0` then
+`(u n + k) / n → 0`. -/
+theorem tendsto_add_const_div_atTop_nhds_zero {u : ℕ → ℕ} (k : ℕ)
+    (hu : Tendsto (fun n => (u n : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    Tendsto (fun n => ((u n + k : ℕ) : ℝ≥0∞) / n) atTop (𝓝 0) := by
+  simpa [Nat.cast_add, ENNReal.add_div]
+    using hu.add (tendsto_natCast_div_atTop_nhds_zero k)
+
+/-- The ceiling logarithm absorbs additive constants at constant cost:
+`ceilLog2 (a + k) ≤ ceilLog2 a + (ceilLog2 (k + 1) + 1)`. -/
+theorem ceilLog2_add_le (a k : ℕ) :
+    ceilLog2 (a + k) ≤ ceilLog2 a + (ceilLog2 (k + 1) + 1) := by
+  rcases Nat.eq_zero_or_pos a with rfl | ha
+  · simpa using (ceilLog2_mono (Nat.le_succ k)).trans (Nat.le_succ _)
+  · have hmul : a + k ≤ (a + 1) * (k + 1) := by
+      have : (a + 1) * (k + 1) = a * k + a + k + 1 := by ring
+      omega
+    calc ceilLog2 (a + k)
+        ≤ ceilLog2 ((a + 1) * (k + 1)) := ceilLog2_mono hmul
+      _ ≤ ceilLog2 (a + 1) + ceilLog2 (k + 1) := ceilLog2_mul_le _ _
+      _ ≤ (ceilLog2 a + 1) + ceilLog2 (k + 1) :=
+          Nat.add_le_add_right (ceilLog2_succ_le ha) _
+      _ = ceilLog2 a + (ceilLog2 (k + 1) + 1) := by omega
+
+/-- The log-runtime density survives an additive constant on the runtime:
+if `ceilLog2 (S n) / n → 0` then `ceilLog2 (S n + k) / n → 0`. -/
+theorem tendsto_ceilLog2_add_const_div_atTop_nhds_zero {S : ℕ → ℕ} (k : ℕ)
+    (hS : Tendsto (fun n => (ceilLog2 (S n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    Tendsto (fun n => (ceilLog2 (S n + k) : ℝ≥0∞) / n) atTop (𝓝 0) := by
+  have hlim := tendsto_add_const_div_atTop_nhds_zero (ceilLog2 (k + 1) + 1) hS
+  exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hlim
+    (fun _ => zero_le)
+    (fun n => ENNReal.div_le_div_right (Nat.cast_le.mpr (ceilLog2_add_le _ _)) n)
+
+/-- **The fixed-code generator collapse.** Suppose one code `c` generates every prefix
+of `Z`: on the input tape `d n` (with empty context), of length at most `g n`, the code
+runs to a value decoding to `seqPrefix Z n` within `S n` transitions. If the densities
+`g n / n` and `ceilLog2 (S n) / n` vanish, then `ktRate Z = 0`. The witness program is
+`false :: unaryPrefix (encode c) ++ d n`; the unary prefix contributes the constant
+`encode c + 1` to the description, absorbed by the density hypotheses. -/
+theorem ktRate_eq_zero_of_code {Z : ℕ → Bool} {c : Code}
+    {d : ℕ → BitString} {g S : ℕ → ℕ}
+    (hlen : ∀ n, programLength (d n) ≤ g n)
+    (h : ∀ n, ∃ (T : List ℕ) (steps r : ℕ),
+      Run c (Encodable.encode (d n, ([] : BitString))) T steps ∧
+      T.getLast? = some r ∧
+      (Encodable.decode r : Option BitString).getD [] = seqPrefix Z n ∧
+      steps ≤ S n)
+    (hg : Tendsto (fun n => (g n : ℝ≥0∞) / n) atTop (𝓝 0))
+    (hS : Tendsto (fun n => (ceilLog2 (S n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    ktRate Z = 0 := by
+  refine ktRate_eq_zero_of_witnesses
+    (g := fun n => g n + (Encodable.encode c + 2))
+    (T := fun n => S n + (Encodable.encode c + 3)) (fun n => ?_)
+    (tendsto_add_const_div_atTop_nhds_zero _ hg)
+    (tendsto_ceilLog2_add_const_div_atTop_nhds_zero _ hS)
+  obtain ⟨T, steps, r, hrun, hlast, hdec, hsteps⟩ := h n
+  have hu := universalRuns_of_run hrun hlast
+  rw [hdec] at hu
+  refine ⟨false :: (unaryPrefix (Encodable.encode c) ++ d n),
+    Encodable.encode c + 1 + steps + 1 + 1,
+    ⟨false, _, _, rfl, hu, rfl⟩, ?_, ?_⟩
+  · have hdn : (d n).length ≤ g n := hlen n
+    simp only [programLength, List.length_cons, List.length_append, length_unaryPrefix]
+    omega
+  · omega
 
 end TimedKt
