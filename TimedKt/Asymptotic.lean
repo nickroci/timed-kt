@@ -238,4 +238,39 @@ theorem ktRate_eq_zero_of_code {Z : ℕ → Bool} {c : Code}
     omega
   · omega
 
+/-! ### Truth tables of Boolean functions -/
+
+/-- The canonical enumeration of bitstrings: the bijection `ℕ ≃ BitString` obtained
+from the encodability and infinitude of `List Bool`
+(`Denumerable.ofEncodableOfInfinite`), listing bitstrings in increasing order of their
+`Encodable.encode` value. -/
+def bitStringEnum : ℕ ≃ BitString :=
+  letI : Denumerable (List Bool) := Denumerable.ofEncodableOfInfinite (List Bool)
+  (Denumerable.eqv (List Bool)).symm
+
+/-- The **truth-table sequence** of a Boolean function on bitstrings: bit `i` is the
+value of `f` at the `i`-th bitstring of the canonical enumeration. Measuring a function
+family through the complexity of its truth table is the meta-complexity convention. -/
+def truthTableSeq (f : BitString → Bool) : ℕ → Bool :=
+  fun i => f (bitStringEnum i)
+
+/-- The **truth-table complexity rate** of a Boolean function: the `Kt`-rate of its
+truth-table sequence. -/
+noncomputable def ttKtRate (f : BitString → Bool) : ℝ≥0∞ :=
+  ktRate (truthTableSeq f)
+
+/-- The hardcode ceiling for truth tables: `ttKtRate f ≤ 1` for every function. -/
+theorem ttKtRate_le_one (f : BitString → Bool) : ttKtRate f ≤ 1 :=
+  ktRate_le_one (truthTableSeq f)
+
+/-- The generator collapse for truth tables: runs producing the truth-table prefixes
+with vanishing description and log-runtime densities force `ttKtRate f = 0`. -/
+theorem ttKtRate_eq_zero_of_witnesses {f : BitString → Bool} {g T : ℕ → ℕ}
+    (h : ∀ n, ∃ p t, FlaggedRuns p [] (seqPrefix (truthTableSeq f) n) t ∧
+      programLength p ≤ g n ∧ t ≤ T n)
+    (hg : Tendsto (fun n => (g n : ℝ≥0∞) / n) atTop (𝓝 0))
+    (hT : Tendsto (fun n => (ceilLog2 (T n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    ttKtRate f = 0 :=
+  ktRate_eq_zero_of_witnesses h hg hT
+
 end TimedKt
