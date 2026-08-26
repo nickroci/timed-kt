@@ -10,8 +10,8 @@ import Mathlib.Tactic.Linarith
 /-!
 # The Operational Evaluation Relation
 
-This module ports `Irreducibility.OperationalSteps` from the parent project and adds a
-determinism theorem.
+This module defines the operational evaluation relation for `Nat.Partrec.Code` and
+proves its determinism.
 
 `Run c n T s` is an inductive evaluation relation for `Nat.Partrec.Code`, defined
 without fuel and without reference to `Code.evaln`. It carries the write-once trace `T`
@@ -23,7 +23,7 @@ timed universal machine reuses `Run` for its code-execution portion.
 ## Main results
 
 * `Run.deterministic`: for fixed `(c, n)` the trace and the transition count are
-  unique. (New relative to the parent project, which left determinism unproved.)
+  unique.
 * `exists_run_iff_exists_tracen`: a `Run` exists exactly for the halting computations;
   together with `evaln_of_tracen` this connects `Run` to `Code.eval`.
 * `Run.length_le_steps` and `Run.steps_le`: writes and transitions are linearly
@@ -454,8 +454,8 @@ end Bridge
 
 /-! ### Determinism
 
-The parent project left determinism unproved. The timed machine needs it: uniqueness of
-the transition count for every successful run is part of the timed-machine contract. -/
+The timed machine needs determinism: uniqueness of the transition count for every
+successful run is part of the timed-machine contract. -/
 
 /-- **Determinism.** For fixed `(c, n)`, the trace and the transition count of a `Run`
 are unique: the derivation tree is forced by the code's shape and the sub-results. -/

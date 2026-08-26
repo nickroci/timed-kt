@@ -10,11 +10,10 @@ import Mathlib.Data.ENat.Basic
 /-!
 # The Write-Once Trace Evaluator
 
-This module ports the fuel-free layer of `Irreducibility.V2.Trace` from the parent
-project. `tracen k c n` runs the code `c` on input `n` with fuel `k`, mirroring
-Mathlib's `Code.evaln` clause for clause, but returns the append-only list of every
-value materialized during the computation, in evaluation order, with the output as the
-last element.
+This module defines the write-once trace evaluator. `tracen k c n` runs the code `c`
+on input `n` with fuel `k`, mirroring Mathlib's `Code.evaln` clause for clause, but
+returns the append-only list of every value materialized during the computation, in
+evaluation order, with the output as the last element.
 
 The fuel parameter is scaffolding, not a cost: `tracen_mono` shows a successful trace
 is identical at every larger fuel, `tracen_unique` that it is independent of the fuel
@@ -23,7 +22,7 @@ counts its entries. The agreement lemmas (`evaln_eq_tracen_bind` and consequence
 identify the trace's last element with the `Code.evaln` output, which is how the
 operational semantics of `TimedKt.Run` is connected to `Code.eval`.
 
-This file deliberately contains no cost measure priced by fuel; the legacy fuel-priced
+This file deliberately contains no cost measure priced by fuel; the fuel-priced
 quantities live in `TimedKt.FuelCost`.
 -/
 

@@ -7,19 +7,20 @@ import TimedKt.Trace
 import Mathlib.Order.Lattice.Nat
 
 /-!
-# The Legacy Fuel Cost, and Its Divergence from Computational Work
+# The Fuel Cost, and Its Divergence from Computational Work
 
-The parent project's original `Kt` priced runtime by `Code.evaln` fuel. That fuel is a
-value-magnitude quantity, not a transition count: `Code.evaln_bound` (the
-`guard (n ≤ k)`) forces the fuel past the input value at every node, so the fuel
+The obvious first candidate for a runtime notion over `Nat.Partrec.Code` is Mathlib's
+own evaluation bound: price a computation by its least `Code.evaln` fuel. That fuel
+is a value-magnitude quantity, not a transition count: `Code.evaln_bound` (the
+`guard (n ≤ k)`) forces the fuel past the input value at every node, so a fuel-priced
 measure charges for the magnitude of values rather than for work performed. This
-module ports the least-fuel cost `minFuel` (named `writeOnceCost` in the parent
-project) together with the theorem that separates it from the write ledger.
+module defines the least-fuel cost `minFuel` together with the theorem that separates
+it from the write ledger.
 
 ## Main results
 
 * `fuel_exceeds_writes_unboundedly`: for every bound `M` there is a computation that
-  commits exactly one write yet needs fuel at least `M`. This is the regression theorem
+  commits exactly one write yet needs fuel at least `M`. This is the divergence theorem
   recording why the fuel-priced measure was replaced: the public `Kt` of this package
   prices operational transitions (`TimedKt.Run`) instead.
 -/

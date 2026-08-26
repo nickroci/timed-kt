@@ -24,9 +24,9 @@ convention, plus one transition for the context flag). Neither `progSize` nor
 ## Main results
 
 * `Kt_cond_le_Kt`: **the conditioning theorem** — `Kt(x | y) ≤ Kt(x)`, with additive
-  constant zero. The parent project refuted the constant-overhead form outright for
-  its fuel-priced measure; for the transition clock and the flagged machine it holds
-  for free.
+  constant zero. A fuel-priced variant is incompatible with any constant-overhead
+  form, because `Code.evaln`'s input guard taxes the mere receipt of the conditioning
+  input; for the transition clock and the flagged machine it holds for free.
 * `Kt_cond_le_realized`: invariance — `Kt(x | y) ≤ Kt_D(x | y) + (overhead + 2)` for
   every code-realized timed decompressor `D` with a linear simulation bound.
 * `K_le_Kt` / `K_cond_le_Kt_cond`: the library's bitstring complexities of the same
@@ -51,9 +51,9 @@ noncomputable def Kt (x : BitString) : ENat :=
 
 /-- **The conditioning theorem.** Conditioning never costs: `Kt(x | y) ≤ Kt(x)`, with
 additive constant zero — the machine's context flag turns any plain witness into a
-conditional one of the same length and transition count. Contrast: for the parent
-project's fuel-priced measure even `Kt(x | y) ≤ Kt(x) + C` is refuted, because fuel
-taxes the mere receipt of the conditioning input. -/
+conditional one of the same length and transition count. Contrast: a fuel-priced
+variant cannot satisfy even `Kt(x | y) ≤ Kt(x) + C`, because `Code.evaln`'s input
+guard (`Code.evaln_bound`) taxes the mere receipt of the conditioning input. -/
 theorem Kt_cond_le_Kt (x y : BitString) : Kt_cond x y ≤ Kt x :=
   condKt_flagged_cond_le_plain x y
 

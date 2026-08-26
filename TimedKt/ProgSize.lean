@@ -9,8 +9,7 @@ import Mathlib.Computability.PartrecCode
 # Program Size for `Nat.Partrec.Code`
 
 This module defines `progSize`, the number of constructors in the syntax tree of a
-`Nat.Partrec.Code`. It is ported unchanged from the parent `irreducibility` project so
-that this package has no dependency on that tree.
+`Nat.Partrec.Code` — the natural size measure on the code algebra itself.
 
 `progSize` is a constructor count, not a bit-length. In this package it appears only in
 the operational step ledger (`TimedKt.Run`), where it calibrates the write/step exchange

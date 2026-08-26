@@ -26,9 +26,10 @@ nothing. As with the clock, this convention is fixed here and quoted in the READ
 
 ## Relation to the transition-priced `Kt`
 
-In the parent project, the write-priced and fuel-priced measures separate unboundedly,
-and the comparison `Wt ≤ Kt` could only be proved multiplicatively. Against the
-transition clock both pathologies disappear:
+On a fuel clock no comparison of this quality is available: fuel diverges unboundedly
+from the committed work (`fuel_exceeds_writes_unboundedly`), so a fuel-priced time
+measure cannot track the write ledger at zero overhead. Against the transition clock
+the two ledgers are tightly coupled:
 
 * `Wt_cond_le_Kt_cond` — every write is a transition, on the same run of the same
   program, so `Wt_cond ≤ Kt_cond` with no overhead at all;
@@ -199,9 +200,9 @@ theorem Wt_cond_lt_top_iff {x y : BitString} :
     exact lt_of_le_of_lt (Wt_cond_le_of_flaggedRunsW hw) (ENat.natCast_lt_top _)
 
 /-- **Writes never exceed transitions.** Every timed witness is a write witness of the
-same program with a smaller ledger, so `Wt_cond ≤ Kt_cond` with no overhead. In the
-parent project this comparison against the fuel clock is only multiplicative; against
-the transition clock it is free. -/
+same program with a smaller ledger, so `Wt_cond ≤ Kt_cond` with no overhead — both
+prices are read off the same operational run, which is what a fuel clock (divergent
+from the work performed) cannot offer. -/
 theorem Wt_cond_le_Kt_cond (x y : BitString) : Wt_cond x y ≤ Kt_cond x y := by
   refine le_sInf ?_
   rintro n ⟨p, t, hrun, rfl⟩

@@ -12,9 +12,9 @@ import TimedKt.Kt
 Concrete transition counts for the basic code shapes — constants, successor,
 composition, primitive recursion, and search — and the comparison that motivated the
 timed measure: the successor's native transition cost is the constant `1`, while its
-legacy `evaln` fuel is `N + 1`, linear in the input's magnitude.
+`evaln` fuel is `N + 1`, linear in the input's magnitude.
 
-This module is the only place the public theory and the legacy fuel measure meet, and
+This module is the only place the public theory and the fuel cost meet, and
 they meet only to be compared.
 -/
 
@@ -48,7 +48,7 @@ example : Run (Code.rfind' Code.left) (Nat.pair 0 0) [0, 0] 2 := by
     simpa using hl
   exact Run.rfindFound h rfl
 
-/-! ### Native transitions versus legacy fuel
+/-! ### Native transitions versus fuel
 
 The check required of the corrected measure: the successor has constant native
 transition cost even though its `evaln` fuel is input-magnitude dependent. -/

@@ -48,8 +48,7 @@ The operational semantics is `Run` (`TimedKt/Run.lean`): a fuel-free inductive
 evaluation relation for `Nat.Partrec.Code` in which one transition is one dispatch on
 a `Code` constructor. `Run` is proved sound and complete for `Code.eval` (through the
 write-once trace evaluator `tracen`), and deterministic: the trace and the transition
-count of a halting computation are unique (`Run.deterministic`, new here — the parent
-project left this unproved).
+count of a halting computation are unique (`Run.deterministic`).
 
 `UniversalRuns` (`TimedKt/UniversalRun.lean`) replays the universal decompressor's
 computation with this clock; forgetting the clock gives back exactly the library's
@@ -78,15 +77,14 @@ zero — a plain-complexity witness runs with empty context, so flipping its fla
 `true` gives a conditional witness of the same length and transition count. The same
 holds for the write measure (`Wt_cond_le_Wt`).
 
-Contrast: in the parent research development (a separate, private Lean tree; see
-COVERAGE.md's "Parent" source) even the constant-overhead form
-`FuelKt(x | y) ≤ FuelKt(x) + C` is refuted for its fuel-priced measure
-(`not_FuelKt_cond_le_FuelKt_add_const` in its `PredecessorSeparation.lean`), because
-`evaln` fuel taxes the mere receipt of the conditioning input. That refutation is an
-external result, not formalized in this package; what this package proves is the
-per-computation fuel/work divergence behind it (`fuel_exceeds_writes_unboundedly`,
-`succ_transitions_constant_fuel_linear`). The relativization behavior of the
-corrected measure is the textbook one; the failure was a property of the fuel clock.
+Contrast: a fuel clock cannot behave this way. Pricing runtime by the least
+`Code.evaln` fuel taxes the mere receipt of the conditioning input — the evaluator's
+input guard forces any halting evaluation's fuel past its input value
+(`Code.evaln_bound`) — so the price of "given `y`" grows with the magnitude of `y`
+rather than with work performed, which is incompatible with constant-overhead
+conditioning. This package proves the underlying fuel/work divergence
+(`fuel_exceeds_writes_unboundedly`, `succ_transitions_constant_fuel_linear`); the
+relativization behavior of the transition-clocked measure is the textbook one.
 
 ## Invariance scope
 
@@ -129,10 +127,11 @@ Against the transition clock the write and time prices nearly coincide:
   additive `ceilLog2 (|s| + 2 * progSize (parsedCode s.tail) + 4)` (the tail drops
   the context flag), logarithmic in the witness's own description data.
 
-In the parent research development the same comparison against the *fuel* clock is
-only multiplicative, with an unbounded conditional gap (its `writeLevin_le_Kt_mul`
-and `Kt_cond_writeLevin_cond_gap_unbounded` — external results, not formalized
-here); both pathologies are properties of the fuel clock, not of the write ledger.
+No comparison of this quality is available on a fuel clock: fuel diverges
+unboundedly from the committed work (`fuel_exceeds_writes_unboundedly`), so a
+fuel-priced time measure cannot track the write ledger at zero overhead. The tight
+coupling above is possible because both prices are derived from the same
+operational run.
 
 The tape's second ledger is priced too: `Bt_cond x y = min { |p| + ceilLog2 b }` over
 runs whose inner trace commits `b` total bits (`TimedKt/BitCost.lean`), with the same
@@ -142,13 +141,14 @@ inequality between `Bt` and `Wt` or `Kt` is claimed in either direction: a singl
 write can carry arbitrarily many bits and a written `0` carries none, so per-run
 ledger domination fails both ways.
 
-## Difference from the legacy fuel measure
+## Why the clock is transitions, not fuel
 
-The parent project's original `Kt` priced runtime by `Code.evaln` fuel and program
-size by constructor count. `evaln` fuel is a value-magnitude quantity: the evaluator's
-input guard forces fuel past the input value at every node, so the fuel measure taxes
+The obvious first candidate for a runtime notion over `Nat.Partrec.Code` is
+Mathlib's own evaluation bound: price a computation by the least `Code.evaln` fuel.
+That fuel is a value-magnitude quantity, not a work count: the evaluator's input
+guard forces fuel past the input value at every node, so a fuel-priced measure taxes
 the magnitude of values rather than work performed. The package keeps the least-fuel
-cost as `minFuel` (`TimedKt/FuelCost.lean`) together with the regression theorems:
+cost as `minFuel` (`TimedKt/FuelCost.lean`) together with the divergence theorems:
 
 * `fuel_exceeds_writes_unboundedly` — computations with one write but arbitrarily
   large fuel;
@@ -180,5 +180,4 @@ See `COVERAGE.md` for the source-to-Lean map and the open items.
 ## License and attribution
 
 Apache-2.0 (see `LICENSE`). Depends on `kolmogorov_complexity` (Apache-2.0), pinned
-by commit in `lakefile.toml`; no code is copied from it. The `tracen`/`Run` layer is
-ported from the parent `irreducibility` project by the same author.
+by commit in `lakefile.toml`; no code is copied from it.

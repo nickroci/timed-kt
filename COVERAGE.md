@@ -17,12 +17,10 @@ Sources:
   [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
   library, pinned at commit `f11c8f01` (see `lake-manifest.json`): the untimed layer
   this package builds on.
-- **Parent** — the private parent research development (`irreducibility`, a Lean 4.27
-  tree, not published), from which the `tracen`/`Run` layer was ported; its
-  fuel-measure results cited below live there under the `FuelKt` names as of its
-  commit `6c25462`. Rows sourced "parent V2" / "parent `writeLevin`" /
-  "parent project" refer to modules of that tree. Parent results are context, not
-  theorems of this package.
+
+Rows with source "—" are constructions of this package (the operational ledgers, the
+fuel comparison layer, and the write/bit-priced measures) rather than formalizations
+of a specific literature statement.
 
 Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖ out of scope.
 
@@ -51,7 +49,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 
 | Result | Source | Lean | Status |
 |---|---|---|---|
-| **Conditioning** `Kt(x\|y) ≤ Kt(x) + O(1)` — here with constant `0` (refuted outright for the parent's fuel measure) | LV | `Kt_cond_le_Kt` (`Kt.lean`), `condKt_flagged_cond_le_plain` (`Flagged.lean`) | ✅ |
+| **Conditioning** `Kt(x\|y) ≤ Kt(x) + O(1)` — here with constant `0` | LV | `Kt_cond_le_Kt` (`Kt.lean`), `condKt_flagged_cond_le_plain` (`Flagged.lean`) | ✅ |
 | Conditioning for the write measure, constant `0` | — | `Wt_cond_le_Wt` (`WriteOnce.lean`) | ✅ |
 | Time-side invariance over code-realized timed decompressors with linear simulation bounds | Levin73 | `condKt_timedUniversal_le` (`Invariance.lean`); public form at `+2`: `Kt_cond_le_realized` | ✅ (scoped to the stated class) |
 | Comparison class inhabited | — | `idTimed`, `idTimedRealization` (`Invariance.lean`) | ✅ |
@@ -66,27 +64,27 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 
 | Result | Source | Lean | Status |
 |---|---|---|---|
-| Write ledger of the universal machine; uniqueness of `(x, t, w)` | parent V2 | `UniversalRunsW`, `UniversalRunsW.unique` (`WriteOnce.lean`) | ✅ |
-| Write-priced complexity `Wt_cond`, `Wt` (`min {\|p\| + ⌈log₂ w⌉}`) | parent `writeLevin` | `Wt_cond`, `Wt` (`WriteOnce.lean`) | ✅ |
-| `Wt ≤ Kt` — additive, zero overhead (vs. multiplicative-only against the fuel clock) | new here | `Wt_cond_le_Kt_cond`, `Wt_le_Kt` | ✅ |
+| Write ledger of the universal machine; uniqueness of `(x, t, w)` | — | `UniversalRunsW`, `UniversalRunsW.unique` (`WriteOnce.lean`) | ✅ |
+| Write-priced complexity `Wt_cond`, `Wt` (`min {\|p\| + ⌈log₂ w⌉}`) | — | `Wt_cond`, `Wt` (`WriteOnce.lean`) | ✅ |
+| `Wt ≤ Kt` — additive, zero overhead | new here | `Wt_cond_le_Kt_cond`, `Wt_le_Kt` | ✅ |
 | Finiteness ↔ producibility for the write measure | — | `Wt_cond_lt_top_iff` | ✅ |
 | `Kt ≤` write witness `+ O(log description)` per witness | new here | `Kt_cond_le_of_flaggedRunsW` | ✅ |
-| `K ≤ Wt`; `Wt(x\|y) ≤ \|x\| + c` with explicit `c` | parent `K_le_writeLevin` | `K_cond_le_Wt_cond`, `Wt_cond_le_length`, `Wt_le_length` | ✅ |
-| Bit-content ledger and production-dominates-output | parent V2 | `traceBits`, `size_output_le_traceBits` (`Trace.lean`) | ✅ |
-| Write/transition separation instance (linear, not unbounded) | parent V2 | `precLoop_ledgers` (`Examples.lean`) | ✅ |
-| Measure-level `Kt ≤ Wt + O(1)` (uniform additive constant) | open in parent | as open against the step clock as against fuel; the per-witness log penalty is the proven form | ❌ |
-| Bit-priced (`traceBits`) complexity measure: `Bt_cond`, `Bt`; ledger forgetting; uniqueness of `(x, t, b)`; witness bound; `K ≤ Bt`; finiteness ↔ producibility; conditioning constant `0` | parent V2 | `UniversalRunsB`, `FlaggedRunsB`, `Bt_cond`, `Bt`, `Bt_cond_le_of_flaggedRunsB`, `K_cond_le_Bt_cond`, `Bt_cond_lt_top_iff`, `Bt_cond_le_Bt` (`BitCost.lean`) | ✅ |
+| `K ≤ Wt`; `Wt(x\|y) ≤ \|x\| + c` with explicit `c` | — | `K_cond_le_Wt_cond`, `Wt_cond_le_length`, `Wt_le_length` | ✅ |
+| Bit-content ledger and production-dominates-output | — | `traceBits`, `size_output_le_traceBits` (`Trace.lean`) | ✅ |
+| Write/transition separation instance (linear, not unbounded) | — | `precLoop_ledgers` (`Examples.lean`) | ✅ |
+| Measure-level `Kt ≤ Wt + O(1)` (uniform additive constant) | — | as open against the step clock as against fuel; the per-witness log penalty is the proven form | ❌ |
+| Bit-priced (`traceBits`) complexity measure: `Bt_cond`, `Bt`; ledger forgetting; uniqueness of `(x, t, b)`; witness bound; `K ≤ Bt`; finiteness ↔ producibility; conditioning constant `0` | — | `UniversalRunsB`, `FlaggedRunsB`, `Bt_cond`, `Bt`, `Bt_cond_le_of_flaggedRunsB`, `K_cond_le_Bt_cond`, `Bt_cond_lt_top_iff`, `Bt_cond_le_Bt` (`BitCost.lean`) | ✅ |
 | Comparison of `Bt` with `Wt` or `Kt` (either direction) | — | per-run ledger domination fails both ways (unbounded `Nat.size` up, `Nat.size 0 = 0` down); no measure-level route proved | ❌ |
 
-## The legacy fuel measure (regression layer)
+## The fuel clock (the rejected alternative)
 
 | Result | Source | Lean | Status |
 |---|---|---|---|
-| Least-fuel cost | parent project | `minFuel` (`FuelCost.lean`) | ✅ |
-| Fuel diverges unboundedly from writes | parent project | `fuel_exceeds_writes_unboundedly` | ✅ |
-| Successor: constant transitions, linear fuel | parent project | `succ_transitions_constant_fuel_linear` (`Examples.lean`) | ✅ |
-| Writes/transitions linearly equivalent per fixed code | parent project | `Run.length_le_steps`, `Run.steps_le`, `Run.sandwich` | ✅ |
-| Full fuel-priced `FuelKt` measure (renamed old `Kt`, chain rule, log-relativization) | parent project | lives in the parent tree as `FuelKt`/`FuelKt_cond`/`fuelCost` (`FuelKt.lean`; rename done); not ported here beyond `minFuel` | ➖ (port on demand) |
+| Least-fuel cost | — | `minFuel` (`FuelCost.lean`) | ✅ |
+| Fuel diverges unboundedly from writes | — | `fuel_exceeds_writes_unboundedly` | ✅ |
+| Successor: constant transitions, linear fuel | — | `succ_transitions_constant_fuel_linear` (`Examples.lean`) | ✅ |
+| Writes/transitions linearly equivalent per fixed code | — | `Run.length_le_steps`, `Run.steps_le`, `Run.sandwich` | ✅ |
+| A fully developed fuel-priced measure (its own chain rule and relativization theory) | — | not developed here; `minFuel` exists only as the comparison point for the divergence theorems | ➖ (out of scope) |
 
 ## Hygiene and CI
 
@@ -105,6 +103,3 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
   proved linear slowdown.
 - Exact `Kt` values for small concrete strings (`native_decide`-free evaluation
   strategy needed).
-- Long-term: re-basing the parent tree's leakage/SoI/amortization results onto this
-  package's corrected measure. (The parent tree's own quarantine rename — its fuel
-  measure is now `FuelKt` — is complete as of its commit `6c25462`.)
