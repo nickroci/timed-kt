@@ -187,6 +187,36 @@ What is **not** claimed: any sequence separating the `Kt`-rate from the untimed
 computational depth as a density; the package proves the two bracketing theorems
 only.
 
+## Certified evaluation
+
+`TimedKt/Evaluator.lean` makes the operational semantics executable inside the
+kernel's reach: `runBounded b c n` mirrors `Run`'s clauses one for one under a
+transition budget `b` — computable, structurally recursive on the budget, no fuel —
+and returns the exact write-once trace together with the exact transition count, or
+`none` when the run does not fit within `b` transitions. Soundness and completeness
+identify its successes with the `Run` derivations within budget (`runBounded_sound`,
+`runBounded_complete`, packaged as `runBounded_eq_some_iff`), so **bounded halting is
+decidable**: `∃ T s, Run c n T s ∧ s ≤ b` is decided by running the evaluator
+(`runBounded_isSome_iff`, `decidableRunWithin`), and any success computes `numSteps`
+exactly (`numSteps_of_runBounded`).
+
+Every evaluator success is a certificate: `Kt_cond_le_of_runBounded` replays the
+witness through the timed universal machine (`universalRuns_of_run`) under a `false`
+context flag and prices the decoded output at `encode c + 2 + |d|` program bits plus
+`⌈log₂ (encode c + s + 3)⌉` time bits. Concrete certified bounds, every component
+evaluated by `rfl`/`simp`/kernel `decide` — no `native_decide` anywhere:
+`Kt [true] ≤ 8` (`Kt_singleton_true_le`), `Kt [false] ≤ 6`
+(`Kt_singleton_false_le`), and the conditional `Kt_cond [true] [true] ≤ 8`
+(`Kt_cond_singleton_true_self_le`).
+
+One value is exact. Every flagged run takes at least four transitions (flag, prefix
+scan, at least one code transition, decode) on a program of at least one bit, so
+every witness value is at least `1 + ⌈log₂ 4⌉ = 3` (`three_le_Kt_cond`) — a
+universal floor, with no enumeration involved. The empty string attains it with the
+one-bit program `[true]`, whose empty tail parses to `Code.zero`:
+`Kt_cond [] y = 3` for every context, and **`Kt [] = 3`** (`Kt_cond_nil`,
+`Kt_nil`) — the first exact `Kt` value of the formalization.
+
 ## Why the clock is transitions, not fuel
 
 The obvious first candidate for a runtime notion over `Nat.Partrec.Code` is
