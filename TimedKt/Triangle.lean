@@ -15,6 +15,11 @@ The composition theorem for the timed complexity:
 Kt(x | z) ≤ Kt(x | y) + Kt(y | z) + 3 ⌈log₂ (Kt(x | y) + 1)⌉ + 7.
 ```
 
+The constant is the literal `7` in the statement of `Kt_triangle` (and the literal
+`4` in `Wt_triangle` and `Bt_triangle`), not an existential; the existentially
+quantified forms are the corollaries `Kt_triangle_exists`, `Wt_triangle_exists`,
+`Bt_triangle_exists`, and `Kt_le_Kt_cond_add_Kt_exists`.
+
 The two optimal witnesses are attained by actual runs
 (`TimedDecompressor.exists_runs_condKt`); composing them on one comp tape of the
 machine — erase bit `false`, so the outer context flows through — produces `x`
@@ -45,15 +50,16 @@ open Kolmogorov
 
 namespace TimedKt
 
-/-- **The triangle inequality** for the timed complexity, with the explicit constant
-`c = 7`: if `Kt(x | y) = n₁` and `Kt(y | z) = n₂`, then
+/-- **The triangle inequality** for the timed complexity, with the literal constant
+`7` in the statement: if `Kt(x | y) = n₁` and `Kt(y | z) = n₂`, then
 `Kt(x | z) ≤ n₁ + n₂ + 3 ⌈log₂ (n₁ + 1)⌉ + 7`. The logarithmic overhead is the
 self-delimitation of the split point — necessary for a plain-style program format —
-and the constant absorbs the two flag bits and the log-of-log terms. -/
-theorem Kt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (n₁ n₂ : ℕ),
+and the constant absorbs the two flag bits and the log-of-log terms. The
+existentially quantified form is `Kt_triangle_exists`. -/
+theorem Kt_triangle : ∀ (x y z : BitString) (n₁ n₂ : ℕ),
     Kt_cond x y = (n₁ : ENat) → Kt_cond y z = (n₂ : ENat) →
-    Kt_cond x z ≤ ((n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + c : ℕ) : ENat) := by
-  refine ⟨7, fun x y z n₁ n₂ h₁ h₂ => ?_⟩
+    Kt_cond x z ≤ ((n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7 : ℕ) : ENat) := by
+  intro x y z n₁ n₂ h₁ h₂
   have hfin₁ : timedCompUniversal.condKt x y < ⊤ := by
     have hlt : Kt_cond x y < ⊤ := by
       rw [h₁]; exact ENat.natCast_lt_top _
@@ -103,13 +109,28 @@ theorem Kt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (n₁ n₂ : ℕ),
   simp only [programLength] at hlen ⊢
   omega
 
-/-- **The easy direction of symmetry of information**: `Kt(x) ≤ Kt(x | y) + Kt(y)`
-up to the triangle overhead — the triangle inequality at the empty outer context. -/
-theorem Kt_le_Kt_cond_add_Kt : ∃ c : ℕ, ∀ (x y : BitString) (n₁ n₂ : ℕ),
+/-- The triangle inequality, existentially quantified over the constant — a
+corollary of `Kt_triangle`, which exports the constant as the literal `7`. -/
+theorem Kt_triangle_exists : ∃ c : ℕ, ∀ (x y z : BitString) (n₁ n₂ : ℕ),
+    Kt_cond x y = (n₁ : ENat) → Kt_cond y z = (n₂ : ENat) →
+    Kt_cond x z ≤ ((n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + c : ℕ) : ENat) :=
+  ⟨7, Kt_triangle⟩
+
+/-- **The easy direction of symmetry of information**, with the literal constant
+`7`: `Kt(x) ≤ Kt(x | y) + Kt(y) + 3 ⌈log₂ (Kt(x | y) + 1)⌉ + 7` — the triangle
+inequality at the empty outer context. The existentially quantified form is
+`Kt_le_Kt_cond_add_Kt_exists`. -/
+theorem Kt_le_Kt_cond_add_Kt : ∀ (x y : BitString) (n₁ n₂ : ℕ),
     Kt_cond x y = (n₁ : ENat) → Kt y = (n₂ : ENat) →
-    Kt x ≤ ((n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + c : ℕ) : ENat) := by
-  obtain ⟨c, hc⟩ := Kt_triangle
-  exact ⟨c, fun x y n₁ n₂ h₁ h₂ => hc x y [] n₁ n₂ h₁ h₂⟩
+    Kt x ≤ ((n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7 : ℕ) : ENat) :=
+  fun x y n₁ n₂ h₁ h₂ => Kt_triangle x y [] n₁ n₂ h₁ h₂
+
+/-- The easy direction of symmetry of information, existentially quantified over
+the constant — a corollary of `Kt_le_Kt_cond_add_Kt`. -/
+theorem Kt_le_Kt_cond_add_Kt_exists : ∃ c : ℕ, ∀ (x y : BitString) (n₁ n₂ : ℕ),
+    Kt_cond x y = (n₁ : ENat) → Kt y = (n₂ : ENat) →
+    Kt x ≤ ((n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + c : ℕ) : ENat) :=
+  ⟨7, Kt_le_Kt_cond_add_Kt⟩
 
 /-! ### The ledger triangles
 
@@ -158,14 +179,15 @@ theorem exists_compRunsB_Bt_cond {x y : BitString} {m : ℕ}
   rw [h] at hattain
   exact_mod_cast hattain.symm
 
-/-- **The triangle inequality for the write measure**, with the explicit constant
-`c = 4`: the same witness composition as `Kt_triangle`, but the ledger of the comp
-node is the plain sum `w₂ + w₁`, so only the description-side gamma code and one
-bit of `ceilLog2` subadditivity remain. -/
-theorem Wt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
+/-- **The triangle inequality for the write measure**, with the literal constant
+`4` in the statement: the same witness composition as `Kt_triangle`, but the ledger
+of the comp node is the plain sum `w₂ + w₁`, so only the description-side gamma code
+and one bit of `ceilLog2` subadditivity remain. The existentially quantified form is
+`Wt_triangle_exists`. -/
+theorem Wt_triangle : ∀ (x y z : BitString) (m₁ m₂ : ℕ),
     Wt_cond x y = (m₁ : ENat) → Wt_cond y z = (m₂ : ENat) →
-    Wt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + c : ℕ) : ENat) := by
-  refine ⟨4, fun x y z m₁ m₂ h₁ h₂ => ?_⟩
+    Wt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4 : ℕ) : ENat) := by
+  intro x y z m₁ m₂ h₁ h₂
   obtain ⟨p₁, t₁, w₁, hr₁, hm₁⟩ := exists_compRunsW_Wt_cond h₁
   obtain ⟨p₂, t₂, w₂, hr₂, hm₂⟩ := exists_compRunsW_Wt_cond h₂
   have hcomp : CompRunsW (true :: false :: (gammaCode p₁.length ++ p₁ ++ p₂)) z x
@@ -185,12 +207,21 @@ theorem Wt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
   simp only [programLength] at hlen hm₁ hm₂ ⊢
   omega
 
-/-- **The triangle inequality for the bit measure**, with the explicit constant
-`c = 4`: identical to `Wt_triangle` over the bit ledger. -/
-theorem Bt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
+/-- The write-measure triangle inequality, existentially quantified over the
+constant — a corollary of `Wt_triangle`, which exports the constant as the literal
+`4`. -/
+theorem Wt_triangle_exists : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
+    Wt_cond x y = (m₁ : ENat) → Wt_cond y z = (m₂ : ENat) →
+    Wt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + c : ℕ) : ENat) :=
+  ⟨4, Wt_triangle⟩
+
+/-- **The triangle inequality for the bit measure**, with the literal constant `4`
+in the statement: identical to `Wt_triangle` over the bit ledger. The existentially
+quantified form is `Bt_triangle_exists`. -/
+theorem Bt_triangle : ∀ (x y z : BitString) (m₁ m₂ : ℕ),
     Bt_cond x y = (m₁ : ENat) → Bt_cond y z = (m₂ : ENat) →
-    Bt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + c : ℕ) : ENat) := by
-  refine ⟨4, fun x y z m₁ m₂ h₁ h₂ => ?_⟩
+    Bt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4 : ℕ) : ENat) := by
+  intro x y z m₁ m₂ h₁ h₂
   obtain ⟨p₁, t₁, b₁, hr₁, hm₁⟩ := exists_compRunsB_Bt_cond h₁
   obtain ⟨p₂, t₂, b₂, hr₂, hm₂⟩ := exists_compRunsB_Bt_cond h₂
   have hcomp : CompRunsB (true :: false :: (gammaCode p₁.length ++ p₁ ++ p₂)) z x
@@ -209,5 +240,13 @@ theorem Bt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
     ceilLog2_mono (by simp only [programLength] at hm₁; omega)
   simp only [programLength] at hlen hm₁ hm₂ ⊢
   omega
+
+/-- The bit-measure triangle inequality, existentially quantified over the
+constant — a corollary of `Bt_triangle`, which exports the constant as the literal
+`4`. -/
+theorem Bt_triangle_exists : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
+    Bt_cond x y = (m₁ : ENat) → Bt_cond y z = (m₂ : ENat) →
+    Bt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + c : ℕ) : ENat) :=
+  ⟨4, Bt_triangle⟩
 
 end TimedKt

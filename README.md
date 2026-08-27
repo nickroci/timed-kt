@@ -158,12 +158,23 @@ self-interpreter problem, deliberately out of scope).
 
 ## The triangle inequality
 
-`Kt_triangle` (`TimedKt/Triangle.lean`), with the explicit constant `7`:
+`Kt_triangle` (`TimedKt/Triangle.lean`), with the constant `7` as a literal in the
+theorem statement — the Lean statement is exactly
+
+```
+∀ x y z n₁ n₂, Kt_cond x y = n₁ → Kt_cond y z = n₂ →
+  Kt_cond x z ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7
+```
+
+(over `ENat`, casts elided), i.e.
 
 ```
 Kt(x | y) = n₁  and  Kt(y | z) = n₂   imply
-Kt(x | z) ≤ n₁ + n₂ + 3 ⌈log₂ (n₁ + 1)⌉ + 7.
+Kt(x | z) ≤ n₁ + n₂ + 3 ⌈log₂ (n₁ + 1)⌉ + 7;
 ```
+
+the existentially quantified form (`∃ c, …`) is the corollary
+`Kt_triangle_exists`.
 
 The two optimal witnesses are attained by actual runs
 (`TimedDecompressor.exists_runs_condKt`) and composed on one composition node with
@@ -180,12 +191,16 @@ program format, an injective packing of two arbitrary programs into one must spe
 is the signature of a prefix-free sibling measure, not of plain `Kt` (Li–Vitányi
 §2.1 and Chapter 7). At `z = []` the theorem specializes to the easy direction of
 symmetry of information, `Kt(x) ≤ Kt(x | y) + Kt(y) + 3 ⌈log₂ (Kt(x | y) + 1)⌉ + 7`
-(`Kt_le_Kt_cond_add_Kt`).
+(`Kt_le_Kt_cond_add_Kt`, again with the literal `7`; existential form
+`Kt_le_Kt_cond_add_Kt_exists`).
 
-The write and bit measures compose over the same tape with the smaller overhead
-`2 ⌈log₂ (m₁ + 1)⌉ + 4` (`Wt_triangle`, `Bt_triangle`): a composition node's ledger
-is the plain sum of its stages' ledgers — the gamma scan costs transitions but
-commits nothing — so the time-side log-log terms disappear.
+The write and bit measures compose over the same tape with the smaller overhead:
+`Wt_cond x y = m₁` and `Wt_cond y z = m₂` imply
+`Wt_cond x z ≤ m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4` (`Wt_triangle`, with the
+literal `4` in the statement; identically for `Bt_cond` in `Bt_triangle`;
+existential forms `Wt_triangle_exists`, `Bt_triangle_exists`): a composition node's
+ledger is the plain sum of its stages' ledgers — the gamma scan costs transitions
+but commits nothing — so the time-side log-log terms disappear.
 
 ## The write-once ledger
 

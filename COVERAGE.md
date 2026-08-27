@@ -82,8 +82,8 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | `Kt(x\|y) ≤ \|x\| + O(1)` | LV | `Kt_cond_le_length` (`Kt.lean`) | ✅ |
 | Witness upper bounds from concrete runs | — | `Kt_cond_le_of_runs`, `condKt_le_of_runs` | ✅ |
 | Finiteness ↔ producibility | — | `Kt_cond_lt_top_iff` | ✅ |
-| **Triangle/composition inequality**: `Kt_cond x y = n₁ → Kt_cond y z = n₂ → Kt_cond x z ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (explicit constant) — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | `Kt_triangle` (`Triangle.lean`); composition as a machine primitive (comp flag, erase bit, gamma split, recursion) | ✅ |
-| Easy direction of symmetry of information: `Kt(x) ≤ Kt(x\|y) + Kt(y) + 3 ⌈log₂⌉ + 7` | LV | `Kt_le_Kt_cond_add_Kt` (`Triangle.lean`), triangle at `z = []` | ✅ |
+| **Triangle/composition inequality**: `Kt_cond x y = n₁ → Kt_cond y z = n₂ → Kt_cond x z ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (the `7` is a literal in the theorem statement; the `∃ c` form is the corollary `Kt_triangle_exists`) — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | `Kt_triangle` (`Triangle.lean`); composition as a machine primitive (comp flag, erase bit, gamma split, recursion) | ✅ |
+| Easy direction of symmetry of information: `Kt_cond x y = n₁ → Kt y = n₂ → Kt x ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (literal `7`; `∃ c` form `Kt_le_Kt_cond_add_Kt_exists`) | LV | `Kt_le_Kt_cond_add_Kt` (`Triangle.lean`), triangle at `z = []` | ✅ |
 | Untimed description-side invariance | KC-lib | `Kolmogorov.existsIsOptimalConditional` (dependency) | ✅ upstream |
 
 ## Attainment and information transfer
@@ -108,7 +108,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | `Kt ≤` write witness `+ O(log description)` per witness | new here | `Kt_cond_le_of_flaggedRunsW` | ✅ |
 | `K ≤ Wt`; `Wt(x\|y) ≤ \|x\| + c` with explicit `c` | — | `K_cond_le_Wt_cond`, `Wt_cond_le_length`, `Wt_le_length` | ✅ |
 | Attainment for the ledger measures (infimum realized by an actual ledgered run) | — | `exists_compRunsW_Wt_cond`, `exists_compRunsB_Bt_cond` (`Triangle.lean`) | ✅ |
-| Ledger triangles: `Wt_cond x z ≤ m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4`, same for `Bt_cond` | — | `Wt_triangle`, `Bt_triangle` (`Triangle.lean`) | ✅ |
+| Ledger triangles: `Wt_cond x y = m₁ → Wt_cond y z = m₂ → Wt_cond x z ≤ m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4` (the `4` is a literal in the theorem statement; `∃ c` forms `Wt_triangle_exists`, `Bt_triangle_exists`), same for `Bt_cond` | — | `Wt_triangle`, `Bt_triangle` (`Triangle.lean`) | ✅ |
 | Bit-content ledger and production-dominates-output | — | `traceBits`, `size_output_le_traceBits` (`Trace.lean`) | ✅ |
 | Write/transition separation instance (linear, not unbounded) | — | `precLoop_ledgers` (`Examples.lean`) | ✅ |
 | Measure-level `Kt ≤ Wt + O(1)` (uniform additive constant) | — | as open against the step clock as against fuel; the per-witness log penalty is the proven form | ❌ |
