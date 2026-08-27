@@ -24,6 +24,7 @@ makes the evaluator complete and not merely sound.
 ## Main results
 
 * `runBounded`: the executable, budget-structural evaluator.
+* `runBounded_sound`: a success of the evaluator is a `Run` derivation within budget.
 -/
 
 open Nat.Partrec
@@ -83,5 +84,94 @@ def runBounded : ℕ → Code → ℕ → Option (List ℕ × ℕ)
           let rr ← runBounded b (Code.rfind' cf) (Nat.pair a (m + 1))
           guard (rx.2 + rr.2 + 1 ≤ b + 1)
           pure (rx.1 ++ rr.1, rx.2 + rr.2 + 1)
+
+/-! ### Soundness -/
+
+/-- **Soundness.** A success of the step-budgeted evaluator is an evaluation
+derivation, and its transition count fits the budget. -/
+theorem runBounded_sound {b : ℕ} {c : Code} {n : ℕ} {T : List ℕ} {s : ℕ}
+    (h : runBounded b c n = some (T, s)) : Run c n T s ∧ s ≤ b := by
+  induction b generalizing c n T s with
+  | zero => simp only [runBounded, reduceCtorEq] at h
+  | succ b ih =>
+      cases c with
+      | zero =>
+          simp only [runBounded, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨rfl, rfl⟩ := h
+          exact ⟨Run.zero n, by omega⟩
+      | succ =>
+          simp only [runBounded, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨rfl, rfl⟩ := h
+          exact ⟨Run.succ n, by omega⟩
+      | left =>
+          simp only [runBounded, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨rfl, rfl⟩ := h
+          exact ⟨Run.left n, by omega⟩
+      | right =>
+          simp only [runBounded, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨rfl, rfl⟩ := h
+          exact ⟨Run.right n, by omega⟩
+      | pair cf cg =>
+          simp only [runBounded, bind, Option.bind_eq_some_iff, Option.guard_eq_some',
+            Option.pure_def, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨rf, hf, rg, hg, vf, hvf, vg, hvg, _, hle, rfl, rfl⟩ := h
+          obtain ⟨hrf, -⟩ := ih hf
+          obtain ⟨hrg, -⟩ := ih hg
+          exact ⟨Run.pair hrf hrg hvf hvg, hle⟩
+      | comp cf cg =>
+          simp only [runBounded, bind, Option.bind_eq_some_iff, Option.guard_eq_some',
+            Option.pure_def, Option.some.injEq, Prod.mk.injEq] at h
+          obtain ⟨rg, hg, vg, hvg, rf, hf, _, hle, rfl, rfl⟩ := h
+          obtain ⟨hrg, -⟩ := ih hg
+          obtain ⟨hrf, -⟩ := ih hf
+          exact ⟨Run.comp hrg hvg hrf, hle⟩
+      | prec cf cg =>
+          simp only [runBounded, Nat.unpaired] at h
+          have hn : Nat.pair n.unpair.1 n.unpair.2 = n := Nat.pair_unpair n
+          by_cases hm : n.unpair.2 = 0
+          · rw [hm] at h
+            simp only [Nat.rec_zero, bind, Option.bind_eq_some_iff, Option.pure_def,
+              Option.some.injEq, Prod.mk.injEq] at h
+            obtain ⟨rf, hf, rfl, rfl⟩ := h
+            obtain ⟨hrf, hsf⟩ := ih hf
+            have key : Run (Code.prec cf cg) (Nat.pair n.unpair.1 0) rf.1 (rf.2 + 1) :=
+              Run.precZero hrf
+            rw [hm] at hn
+            rw [hn] at key
+            exact ⟨key, by omega⟩
+          · obtain ⟨y, hy⟩ : ∃ y, n.unpair.2 = y + 1 := ⟨n.unpair.2 - 1, by omega⟩
+            rw [hy] at h
+            simp only [bind, Option.bind_eq_some_iff, Option.guard_eq_some',
+              Option.pure_def, Option.some.injEq, Prod.mk.injEq] at h
+            obtain ⟨ri, hi, vi, hvi, rg, hg, _, hle, rfl, rfl⟩ := h
+            obtain ⟨hri, -⟩ := ih hi
+            obtain ⟨hrg, -⟩ := ih hg
+            have key : Run (Code.prec cf cg) (Nat.pair n.unpair.1 (y + 1))
+                (ri.1 ++ rg.1) (ri.2 + rg.2 + 1) := Run.precSucc hri hvi hrg
+            rw [hy] at hn
+            rw [hn] at key
+            exact ⟨key, hle⟩
+      | rfind' cf =>
+          simp only [runBounded, Nat.unpaired, bind, Option.bind_eq_some_iff] at h
+          obtain ⟨rx, hx, x, hgl, h⟩ := h
+          have hn : Nat.pair n.unpair.1 n.unpair.2 = n := Nat.pair_unpair n
+          obtain ⟨hrx, hsx⟩ := ih hx
+          by_cases hx0 : x = 0
+          · rw [if_pos hx0, Option.pure_def, Option.some.injEq, Prod.mk.injEq] at h
+            obtain ⟨rfl, rfl⟩ := h
+            subst hx0
+            have key : Run (Code.rfind' cf) (Nat.pair n.unpair.1 n.unpair.2)
+                (rx.1 ++ [n.unpair.2]) (rx.2 + 1) := Run.rfindFound hrx hgl
+            rw [hn] at key
+            exact ⟨key, by omega⟩
+          · rw [if_neg hx0] at h
+            simp only [Option.bind_eq_some_iff, Option.guard_eq_some',
+              Option.pure_def, Option.some.injEq, Prod.mk.injEq] at h
+            obtain ⟨rr, hr, _, hle, rfl, rfl⟩ := h
+            obtain ⟨hrr, -⟩ := ih hr
+            have key : Run (Code.rfind' cf) (Nat.pair n.unpair.1 n.unpair.2)
+                (rx.1 ++ rr.1) (rx.2 + rr.2 + 1) := Run.rfindStep hrx hgl hx0 hrr
+            rw [hn] at key
+            exact ⟨key, hle⟩
 
 end TimedKt
