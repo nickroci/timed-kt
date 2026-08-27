@@ -29,7 +29,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Result | Source | Lean | Status |
 |---|---|---|---|
 | Conditional Kt over a timed machine, `min {\|p\| + ⌈log₂ t⌉}` as `ENat` infimum | Levin73 | `TimedDecompressor.condKt`, `plainKt` (`Timed.lean`) | ✅ |
-| Public `Kt`, `Kt_cond` at the universal machine | Levin73 | `Kt`, `Kt_cond` (`Kt.lean`) | ✅ |
+| Public `Kt`, `Kt_cond` at the composing universal machine | Levin73 | `Kt`, `Kt_cond` (`Kt.lean`) | ✅ |
 | Ceiling log characterization (least `k` with `t ≤ 2^k`) | — | `ceilLog2_isLeast` (`CeilLog2.lean`) | ✅ |
 | Natural-number wrapper | — | `natKt`, `natKt_le` (`Kt.lean`) | ✅ |
 
@@ -44,20 +44,26 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Clocked universal machine; clock-forgetting is definitional | — | `UniversalRuns`, `timedUniversal_toMap` (`UniversalRun.lean`) | ✅ |
 | Soundness/completeness of the clocked relation | — | `universalRuns_iff_produces` (`UniversalRun.lean`) | ✅ |
 | Existence/uniqueness of the transition count per successful run | — | `UniversalRuns.unique` (`UniversalRun.lean`) | ✅ |
+| Self-delimiting length code with exact parse and primrec decoder | Elias-gamma convention | `gammaCode`, `gammaParse_eq_some_iff`, `gammaCode_append_inj`, `primrec_gammaParse` (`Gamma.lean`) | ✅ |
+| Composing universal machine (comp flag, erase bit, gamma split, recursion) | — | `compUniversal`, fuel invariance `compEvalFuel_eq_of_lt` (`Comp.lean`) | ✅ |
+| Computability of the composing machine (stack machine + `Partrec.fix`) | — | `compStep`, `compUniversal_eq_fix`, `isDecompressor_compUniversal` (`CompPartrec.lean`) | ✅ |
+| Clocked composing relation; soundness/completeness; uniqueness of `(x, t)` | — | `CompRuns`, `compRuns_iff_produces`, `CompRuns.unique`, `timedCompUniversal` (`CompRun.lean`) | ✅ |
+| Transfer: composing machine ≤ flagged machine `+ 2` | — | `condKt_comp_le_condKt_flagged` (`CompRun.lean`) | ✅ |
 
 ## Invariance and bounds
 
 | Result | Source | Lean | Status |
 |---|---|---|---|
-| **Conditioning** `Kt(x\|y) ≤ Kt(x) + O(1)` — here with constant `0` | LV | `Kt_cond_le_Kt` (`Kt.lean`), `condKt_flagged_cond_le_plain` (`Flagged.lean`) | ✅ |
+| **Conditioning** `Kt(x\|y) ≤ Kt(x) + O(1)` — here with constant `0` | LV | `Kt_cond_le_Kt` (`Kt.lean`), `condKt_comp_cond_le_plain` (`CompRun.lean`), `condKt_flagged_cond_le_plain` (`Flagged.lean`) | ✅ |
 | Conditioning for the write measure, constant `0` | — | `Wt_cond_le_Wt` (`WriteOnce.lean`) | ✅ |
-| Time-side invariance over code-realized timed decompressors with linear simulation bounds | Levin73 | `condKt_timedUniversal_le` (`Invariance.lean`); public form at `+2`: `Kt_cond_le_realized` | ✅ (scoped to the stated class) |
+| Time-side invariance over code-realized timed decompressors with linear simulation bounds | Levin73 | `condKt_timedUniversal_le` (`Invariance.lean`); public form at `+4`: `Kt_cond_le_realized` | ✅ (scoped to the stated class) |
 | Comparison class inhabited | — | `idTimed`, `idTimedRealization` (`Invariance.lean`) | ✅ |
 | `K(x\|y) ≤ Kt(x\|y)` over the same machine, bitstring `K` | LV | `K_cond_le_Kt_cond`, `K_le_Kt` (`Kt.lean`) | ✅ |
 | `Kt(x\|y) ≤ \|x\| + O(1)` | LV | `Kt_cond_le_length` (`Kt.lean`) | ✅ |
 | Witness upper bounds from concrete runs | — | `Kt_cond_le_of_runs`, `condKt_le_of_runs` | ✅ |
 | Finiteness ↔ producibility | — | `Kt_cond_lt_top_iff` | ✅ |
-| Triangle/composition inequality `Kt(x\|z) ≤ Kt(x\|y) + Kt(y\|z) + O(log Kt(x\|y))` — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | design settled (composition as a machine primitive: a recursive comp flag with a self-delimiting split length); proof not started | ❌ |
+| **Triangle/composition inequality**: `Kt_cond x y = n₁ → Kt_cond y z = n₂ → Kt_cond x z ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (explicit constant) — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | `Kt_triangle` (`Triangle.lean`); composition as a machine primitive (comp flag, erase bit, gamma split, recursion) | ✅ |
+| Easy direction of symmetry of information: `Kt(x) ≤ Kt(x\|y) + Kt(y) + 3 ⌈log₂⌉ + 7` | LV | `Kt_le_Kt_cond_add_Kt` (`Triangle.lean`), triangle at `z = []` | ✅ |
 | Untimed description-side invariance | KC-lib | `Kolmogorov.existsIsOptimalConditional` (dependency) | ✅ upstream |
 
 ## Attainment and information transfer
@@ -75,16 +81,18 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 
 | Result | Source | Lean | Status |
 |---|---|---|---|
-| Write ledger of the universal machine; uniqueness of `(x, t, w)` | — | `UniversalRunsW`, `UniversalRunsW.unique` (`WriteOnce.lean`) | ✅ |
+| Write ledger of the universal machines; uniqueness of `(x, t, w)` | — | `UniversalRunsW`, `FlaggedRunsW`, `CompRunsW`, with `.unique` at each layer (`WriteOnce.lean`) | ✅ |
 | Write-priced complexity `Wt_cond`, `Wt` (`min {\|p\| + ⌈log₂ w⌉}`) | — | `Wt_cond`, `Wt` (`WriteOnce.lean`) | ✅ |
 | `Wt ≤ Kt` — additive, zero overhead | new here | `Wt_cond_le_Kt_cond`, `Wt_le_Kt` | ✅ |
 | Finiteness ↔ producibility for the write measure | — | `Wt_cond_lt_top_iff` | ✅ |
 | `Kt ≤` write witness `+ O(log description)` per witness | new here | `Kt_cond_le_of_flaggedRunsW` | ✅ |
 | `K ≤ Wt`; `Wt(x\|y) ≤ \|x\| + c` with explicit `c` | — | `K_cond_le_Wt_cond`, `Wt_cond_le_length`, `Wt_le_length` | ✅ |
+| Attainment for the ledger measures (infimum realized by an actual ledgered run) | — | `exists_compRunsW_Wt_cond`, `exists_compRunsB_Bt_cond` (`Triangle.lean`) | ✅ |
+| Ledger triangles: `Wt_cond x z ≤ m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4`, same for `Bt_cond` | — | `Wt_triangle`, `Bt_triangle` (`Triangle.lean`) | ✅ |
 | Bit-content ledger and production-dominates-output | — | `traceBits`, `size_output_le_traceBits` (`Trace.lean`) | ✅ |
 | Write/transition separation instance (linear, not unbounded) | — | `precLoop_ledgers` (`Examples.lean`) | ✅ |
 | Measure-level `Kt ≤ Wt + O(1)` (uniform additive constant) | — | as open against the step clock as against fuel; the per-witness log penalty is the proven form | ❌ |
-| Bit-priced (`traceBits`) complexity measure: `Bt_cond`, `Bt`; ledger forgetting; uniqueness of `(x, t, b)`; witness bound; `K ≤ Bt`; finiteness ↔ producibility; conditioning constant `0` | — | `UniversalRunsB`, `FlaggedRunsB`, `Bt_cond`, `Bt`, `Bt_cond_le_of_flaggedRunsB`, `K_cond_le_Bt_cond`, `Bt_cond_lt_top_iff`, `Bt_cond_le_Bt` (`BitCost.lean`) | ✅ |
+| Bit-priced (`traceBits`) complexity measure: `Bt_cond`, `Bt`; ledger forgetting; uniqueness of `(x, t, b)`; witness bound; `K ≤ Bt`; finiteness ↔ producibility; conditioning constant `0` | — | `UniversalRunsB`, `FlaggedRunsB`, `CompRunsB`, `Bt_cond`, `Bt`, `Bt_cond_le_of_compRunsB`, `K_cond_le_Bt_cond`, `Bt_cond_lt_top_iff`, `Bt_cond_le_Bt` (`BitCost.lean`) | ✅ |
 | Comparison of `Bt` with `Wt` or `Kt` (either direction) | — | per-run ledger domination fails both ways (unbounded `Nat.size` up, `Nat.size 0 = 0` down); no measure-level route proved | ❌ |
 
 ## The fuel clock (the rejected alternative)
@@ -107,12 +115,6 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 
 - Comparison of `Bt` with `Wt` or `Kt`: the pointwise route is closed both ways, so
   any inequality needs a genuinely different argument (or a refutation).
-- Triangle/composition inequality (the ❌ above): the settled design makes composition
-  a machine primitive (a comp flag whose tape carries a self-delimited split of two
-  programs, recursively), avoiding both code-wrapping inflation and
-  self-interpretation; the honest overhead is `O(log)` on the description side and
-  `O(log log)` on the time side. Remaining work is the construction and its
-  computability proof.
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the
   universal machine by itself); equivalently, a fuel-free self-interpreter with a
   proved linear slowdown.

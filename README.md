@@ -10,7 +10,8 @@ Kt_U(x | y) = min { |p| + ⌈log₂ t⌉ : U(p, y) outputs x in t transitions }
 ```
 
 for one explicit universal machine `U`, with a machine-checked time-side invariance
-theorem over a precisely stated comparison class. `|p|` is the length of an actual
+theorem over a precisely stated comparison class and a machine-checked triangle
+inequality with explicit constants. `|p|` is the length of an actual
 bitstring program, and `t` counts transitions of an explicit operational semantics —
 neither constructor counts nor `Code.evaln` fuel enter the definition.
 
@@ -25,11 +26,23 @@ invariance — is what this package adds.
 
 ## Machine model
 
-The public machine is the **flagged universal machine** (`TimedKt/Flagged.lean`): the
-first program bit is a context flag, and the rest of the tape is run by the library's
-`universalDecompressor`, which parses it as a unary prefix (`i` ones then a zero)
-naming a `Nat.Partrec.Code` and simulates that code on the encoded pair of the
-remaining tape and the selected context:
+The public machine is the **composing universal machine** (`TimedKt/Comp.lean`):
+the first program bit is a composition flag over the **flagged universal machine**
+(`TimedKt/Flagged.lean`), which is embedded verbatim.
+
+* `compUniversal (false :: s, z) = flaggedUniversal (s, z)` — an **embed node**;
+* `compUniversal (true :: b :: gammaCode ℓ ++ p₁ ++ p₂, z)` with `|p₁| = ℓ` — a
+  **composition node**: run `p₂` (recursively) on context `[]` or `z` as the erase
+  bit `b` selects, obtaining `y`, then run `p₁` (recursively) on context `y`;
+* undefined on every other tape — the gamma decoder is exact
+  (`gammaParse_eq_some_iff`, `TimedKt/Gamma.lean`): it rejects tapes whose length
+  code is missing, incomplete, or non-canonical, so a composition tape has exactly
+  one reading.
+
+The flagged machine beneath: its first bit is a context flag, and the rest of the
+tape is run by the library's `universalDecompressor`, which parses it as a unary
+prefix (`i` ones then a zero) naming a `Nat.Partrec.Code` and simulates that code on
+the encoded pair of the remaining tape and the selected context:
 
 * `flaggedUniversal (true :: p, y) = universalDecompressor (p, [])` — context erased;
 * `flaggedUniversal (false :: p, y) = universalDecompressor (p, y)` — context passed.
@@ -40,11 +53,22 @@ length and the program remainder is empty (end of tape acts as the delimiter, an
 the scan is still charged `i + 1` transitions). This matches the underlying
 library's parser exactly.
 
-The flag costs one bit and one transition and buys the conditioning theorem with
-additive constant zero (see below). Choosing a universal machine with this closure
-property is the standard resolution: without it, erasing the context requires either
-wrapping the simulated code (which inflates the unary prefix quadratically) or a
-self-interpreter with a proved linear-overhead transition bound (open).
+Each flag costs one bit and one transition, and the erase bits buy the conditioning
+theorem with additive constant zero (see below): a plain witness becomes a
+conditional witness by flipping the single erase bit at its own root — the context
+flag for an embed node, the comp erase bit for a composition node. Choosing a
+universal machine with this closure property is the standard resolution: without
+it, erasing the context requires either wrapping the simulated code (which inflates
+the unary prefix quadratically) or a self-interpreter with a proved linear-overhead
+transition bound (open). The composition primitive plays the same role for the
+triangle inequality (see below): composing two programs by code-wrapping or
+self-interpretation would face the identical obstruction, while the machine
+primitive costs only the self-delimited split point.
+
+Computability of the composing machine is proved through an iterative stack machine
+and `Partrec.fix` (`TimedKt/CompPartrec.lean`); the recursion on the tape is
+well-founded because both blocks of a composition node are strictly shorter than
+their tape.
 
 The operational semantics is `Run` (`TimedKt/Run.lean`): a fuel-free inductive
 evaluation relation for `Nat.Partrec.Code` in which one transition is one dispatch on
@@ -68,16 +92,27 @@ For a tape with unary-prefix value `i` and a code execution of `steps` transitio
   pair are treated as atomic (free).
 
 Total for the unflagged layer: `t = (i + 1) + steps + 1`; the flagged machine adds
-one transition for reading the context flag. The run-time price is `ceilLog2 t`, the
+one transition for reading the context flag. The composing layer adds, per node:
+
+* an embed node costs `1` transition (the comp flag) on top of the flagged run;
+* a composition node costs `2` transitions (the comp flag and the erase bit), one
+  transition per bit of the gamma length code, and its two recursive stages:
+  `t = t₂ + t₁ + |gammaCode ℓ| + 2`; the split of the tape at the decoded length is
+  atomic (the same license as the free pair-encode).
+
+The run-time price is `ceilLog2 t`, the
 least `k` with `t ≤ 2^k` (`ceilLog2_isLeast`); the convention at zero is
 `ceilLog2 0 = 0`, which never prices a run since every successful run has `t ≥ 1`.
 
 ## The conditioning theorem
 
 `Kt_cond_le_Kt` (`TimedKt/Kt.lean`): `Kt(x | y) ≤ Kt(x)`, with additive constant
-zero — a plain-complexity witness runs with empty context, so flipping its flag to
-`true` gives a conditional witness of the same length and transition count. The same
-holds for the write measure (`Wt_cond_le_Wt`).
+zero — a plain-complexity witness becomes a conditional witness of the same length
+and transition count by flipping the single erase bit at its root: the context flag
+for an embed node, the comp erase bit for a composition node
+(`condKt_comp_cond_le_plain`; no induction over the tape is needed, which is
+exactly what the composition node's own erase bit is for). The same holds for the
+write and bit measures (`Wt_cond_le_Wt`, `Bt_cond_le_Bt`).
 
 Contrast: a fuel clock cannot behave this way. Pricing runtime by the least
 `Code.evaln` fuel taxes the mere receipt of the conditioning input — the evaluator's
@@ -110,9 +145,10 @@ overhead = (encode code + 1) + ceilLog2 (a + b + encode code + 2)
 ```
 
 All overhead assumptions are fields of `Realization`, visible in the statement. The
-comparison class is inhabited (`idTimedRealization`). The public (flagged) measure
-inherits invariance at two extra units (`Kt_cond_le_realized`,
-`condKt_flagged_le_condKt_universal`), and instantiating at the identity machine
+comparison class is inhabited (`idTimedRealization`). The public (composing)
+measure inherits invariance at four extra units — two for the context flag, two for
+the comp flag (`Kt_cond_le_realized`, through `condKt_flagged_le_condKt_universal`
+and `condKt_comp_le_condKt_flagged`) — and instantiating at the identity machine
 gives `Kt(x | y) ≤ |x| + O(1)` (`Kt_cond_le_length`).
 
 What is **not** claimed: invariance over machines with no code realization or with
@@ -120,24 +156,59 @@ super-linear simulation overhead, and a realization of `timedUniversal` by itsel
 (linear-overhead self-simulation is open — it is the fuel-instrumented
 self-interpreter problem, deliberately out of scope).
 
+## The triangle inequality
+
+`Kt_triangle` (`TimedKt/Triangle.lean`), with the explicit constant `7`:
+
+```
+Kt(x | y) = n₁  and  Kt(y | z) = n₂   imply
+Kt(x | z) ≤ n₁ + n₂ + 3 ⌈log₂ (n₁ + 1)⌉ + 7.
+```
+
+The two optimal witnesses are attained by actual runs
+(`TimedDecompressor.exists_runs_condKt`) and composed on one composition node with
+the erase bit `false`, so the outer context flows through; output determinism
+recovers the middle value. The description overhead is the two flags plus the gamma
+code of the split point (`2 ⌈log₂ (n₁ + 1)⌉ + 1` bits, `gammaCode_length`); the
+time overhead is the ceiling logarithm of the summed clock, within two bits of the
+sum of the ceiling logarithms (`ceilLog2_add_le`) plus a log-log term absorbed into
+the constant (`ceilLog2_two_mul_add_three_le`).
+
+The logarithmic term is honest, not slack: on a plain-style (non-prefix-free)
+program format, an injective packing of two arbitrary programs into one must spend
+`Ω(log)` bits delimiting the split on some inputs, so a uniform additive constant
+is the signature of a prefix-free sibling measure, not of plain `Kt` (Li–Vitányi
+§2.1 and Chapter 7). At `z = []` the theorem specializes to the easy direction of
+symmetry of information, `Kt(x) ≤ Kt(x | y) + Kt(y) + 3 ⌈log₂ (Kt(x | y) + 1)⌉ + 7`
+(`Kt_le_Kt_cond_add_Kt`).
+
+The write and bit measures compose over the same tape with the smaller overhead
+`2 ⌈log₂ (m₁ + 1)⌉ + 4` (`Wt_triangle`, `Bt_triangle`): a composition node's ledger
+is the plain sum of its stages' ledgers — the gamma scan costs transitions but
+commits nothing — so the time-side log-log terms disappear.
+
 ## The write-once ledger
 
 The operational relation `Run` carries the write-once trace alongside its transition
-count, so the universal machine has a second ledger for free: `UniversalRunsW`
+count, so the universal machines have a second ledger for free: `UniversalRunsW`
 (`TimedKt/WriteOnce.lean`) records the number of values the simulated code commits to
-its append-only tape (prefix scanning and result decoding commit nothing). The
-write-priced complexity is `Wt_cond x y = min { |p| + ceilLog2 w }`, with
-`Wt x = Wt_cond x []`; `numWrites` and `traceBits` (`TimedKt/Trace.lean`) are the
-event-count and bit-content ledgers of the underlying tape.
+its append-only tape (prefix scanning and result decoding commit nothing), and the
+flagged and composing layers thread it through (`FlaggedRunsW`, `CompRunsW` — flags
+and the gamma scan commit nothing, and a composition node's ledger is the sum of its
+stages'). The write-priced complexity is `Wt_cond x y = min { |p| + ceilLog2 w }`
+over the composing machine's ledgered runs, with `Wt x = Wt_cond x []`; `numWrites`
+and `traceBits` (`TimedKt/Trace.lean`) are the event-count and bit-content ledgers
+of the underlying tape.
 
 Against the transition clock the write and time prices nearly coincide:
 
 * `Wt_cond_le_Kt_cond` — writes never exceed transitions on the same run of the same
   program, so `Wt_cond ≤ Kt_cond` with no overhead;
 * `Kt_cond_le_of_flaggedRunsW` — transitions are linear in writes per fixed code
-  (`Run.steps_le`), so each write witness on a tape `s` bounds `Kt_cond` within an
-  additive `ceilLog2 (|s| + 2 * progSize (parsedCode s.tail) + 4)` (the tail drops
-  the context flag), logarithmic in the witness's own description data.
+  (`Run.steps_le`), so each flagged write witness on a tape `s` bounds `Kt_cond`
+  within an additive `ceilLog2 (|s| + 2 * progSize (parsedCode s.tail) + 4) + 2`
+  (the tail drops the context flag; the `+ 2` is the embed cost of the composing
+  layer), logarithmic in the witness's own description data.
 
 No comparison of this quality is available on a fuel clock: fuel diverges
 unboundedly from the committed work (`fuel_exceeds_writes_unboundedly`), so a
