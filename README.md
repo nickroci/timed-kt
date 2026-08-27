@@ -236,24 +236,42 @@ finite) and its limsup density `ktRate Z = limsup ktProfile Z n / n`, valued in
 `ℝ≥0∞`. The rate is the time-bounded sibling of the prefix-complexity densities of
 constructive dimension (Lutz's dimension in complexity classes; Mayordomo's Kolmogorov
 characterization; the `limsup` form corresponds to the strong dimension of Athreya,
-Hitchcock, Lutz, and Mayordomo), and measuring a Boolean function through its truth
-table — `truthTableSeq`, `ttKtRate`, via the canonical enumeration
-`bitStringEnum : ℕ ≃ BitString` — is the meta-complexity convention of Allender,
-Buhrman, Koucký, van Melkebeek, and Ronneburger.
+Hitchcock, Lutz, and Mayordomo).
 
 Two theorems bracket the rate. Hardcoding pins it at the ceiling: `ktRate Z ≤ 1` for
-every sequence, however uncomputable (`ktRate_le_one`). A uniform generator collapses
-it: if runs of the flagged machine — the embedded inner layer, carried into the
-public measure by the embed bridge `Kt_cond_le_of_flaggedRuns` at one bit and one
-transition, both absorbed by the densities — produce every prefix with description
-length at most `g n` and runtime at most `T n`, and the densities `g n / n` and
-`ceilLog2 (T n) / n` both vanish, then `ktRate Z = 0`
-(`ktRate_eq_zero_of_witnesses`; the fixed-code form `ktRate_eq_zero_of_code` feeds a
-single `Nat.Partrec.Code` an input-tape family, the code's unary prefix entering as a
-constant absorbed by the density hypotheses). Algorithms are therefore visible at the
-rate level even though every single prefix admits the printing bound. The write
-measure supports the same construction (`wtProfile`, `wtRate`), with
-`wtRate ≤ ktRate` (`wtRate_le_ktRate`).
+every sequence, however uncomputable (`ktRate_le_one`). Cheap generation collapses
+it, at three uniformity levels. Level 1 (`ktRate_eq_zero_of_witnesses`): if runs of
+the flagged machine — the embedded inner layer, carried into the public measure by
+the embed bridge `Kt_cond_le_of_flaggedRuns` at one bit and one transition, both
+absorbed by the densities — produce every prefix with description length at most
+`g n` and runtime at most `T n`, and the densities `g n / n` and `ceilLog2 (T n) / n`
+both vanish, then `ktRate Z = 0`. The hypothesis is `∀ n, ∃ p` — the witness may vary
+arbitrarily with `n` — so this level is *nonuniform*: a sublinear-advice collapse.
+Level 2 (`ktRate_eq_zero_of_code`) fixes a single `Nat.Partrec.Code` fed an input-tape
+family `d n`, the code's unary prefix entering as a constant absorbed by the density
+hypotheses; the family `d` is an arbitrary — possibly noncomputable — function, so
+this level is code-uniform with advice inputs. Level 3
+(`ktRate_eq_zero_of_uniform_code`) is fully uniform: one fixed code on the canonical
+input `Nat.bits n`, no advice — the description density is discharged internally,
+since the binary expansion has length at most `ceilLog2 (n + 1)`
+(`bits_length_le_ceilLog2_succ`) and that density vanishes
+(`tendsto_ceilLog2_succ_div_atTop_nhds_zero`), leaving only the log-runtime density
+as a hypothesis. Cheap generation is therefore visible at the rate level even though
+every single prefix admits the printing bound. The write measure supports the same
+construction (`wtProfile`, `wtRate`), with `wtRate ≤ ktRate` (`wtRate_le_ktRate`).
+
+Boolean functions enter at two distinct objects. The **characteristic sequence**
+(`charSeq f`, rate `charSeqKtRate f`) reads `f` along the canonical enumeration
+`bitStringEnum : ℕ ≃ BitString`; its prefixes are enumeration-dependent fragments —
+the enumeration interleaves lengths, so they are *not* truth tables of any single
+arity. The **truth table** (`truthTable f n`, the `2 ^ n`-bit values of `f` on all
+length-`n` inputs in lexicographic order via `lexStrings`, with `mem_lexStrings` and
+`lexStrings_nodup` certifying the enumeration) is the meta-complexity convention of
+Allender, Buhrman, Koucký, van Melkebeek, and Ronneburger; its rate `ttKtRate f`
+normalizes the per-arity profile `ttProfile f n = Kt(truthTable f n)` by the table
+length `2 ^ n`. The bracketing pair transfers: `ttKtRate f ≤ 1` for every function
+(`ttKtRate_le_one`), and table witnesses of vanishing table-normalized densities
+force `ttKtRate f = 0` (`ttKtRate_eq_zero_of_witnesses`).
 
 What is **not** claimed: any sequence separating the `Kt`-rate from the untimed
 `K`-rate. A sequence of positive `Kt`-rate and zero `K`-rate would exhibit
