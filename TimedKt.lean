@@ -15,5 +15,6 @@ import TimedKt.Kt
 import TimedKt.WriteOnce
 import TimedKt.InfoTransfer
 import TimedKt.Asymptotic
+import TimedKt.Probabilistic
 import TimedKt.BitCost
 import TimedKt.Examples
