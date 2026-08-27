@@ -82,8 +82,8 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | `Kt(x\|y) ≤ \|x\| + O(1)` | LV | `Kt_cond_le_length` (`Kt.lean`) | ✅ |
 | Witness upper bounds from concrete runs | — | `Kt_cond_le_of_runs`, `condKt_le_of_runs` | ✅ |
 | Finiteness ↔ producibility | — | `Kt_cond_lt_top_iff` | ✅ |
-| **Triangle/composition inequality**: `Kt_cond x y = n₁ → Kt_cond y z = n₂ → Kt_cond x z ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (explicit constant) — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | `Kt_triangle` (`Triangle.lean`); composition as a machine primitive (comp flag, erase bit, gamma split, recursion) | ✅ |
-| Easy direction of symmetry of information: `Kt(x) ≤ Kt(x\|y) + Kt(y) + 3 ⌈log₂⌉ + 7` | LV | `Kt_le_Kt_cond_add_Kt` (`Triangle.lean`), triangle at `z = []` | ✅ |
+| **Triangle/composition inequality**: `Kt_cond x y = n₁ → Kt_cond y z = n₂ → Kt_cond x z ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (the `7` is a literal in the theorem statement; the `∃ c` form is the corollary `Kt_triangle_exists`) — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | `Kt_triangle` (`Triangle.lean`); composition as a machine primitive (comp flag, erase bit, gamma split, recursion) | ✅ |
+| Easy direction of symmetry of information: `Kt_cond x y = n₁ → Kt y = n₂ → Kt x ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (literal `7`; `∃ c` form `Kt_le_Kt_cond_add_Kt_exists`) | LV | `Kt_le_Kt_cond_add_Kt` (`Triangle.lean`), triangle at `z = []` | ✅ |
 | Untimed description-side invariance | KC-lib | `Kolmogorov.existsIsOptimalConditional` (dependency) | ✅ upstream |
 
 ## Attainment and information transfer
@@ -108,7 +108,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | `Kt ≤` write witness `+ O(log description)` per witness | new here | `Kt_cond_le_of_flaggedRunsW` | ✅ |
 | `K ≤ Wt`; `Wt(x\|y) ≤ \|x\| + c` with explicit `c` | — | `K_cond_le_Wt_cond`, `Wt_cond_le_length`, `Wt_le_length` | ✅ |
 | Attainment for the ledger measures (infimum realized by an actual ledgered run) | — | `exists_compRunsW_Wt_cond`, `exists_compRunsB_Bt_cond` (`Triangle.lean`) | ✅ |
-| Ledger triangles: `Wt_cond x z ≤ m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4`, same for `Bt_cond` | — | `Wt_triangle`, `Bt_triangle` (`Triangle.lean`) | ✅ |
+| Ledger triangles: `Wt_cond x y = m₁ → Wt_cond y z = m₂ → Wt_cond x z ≤ m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + 4` (the `4` is a literal in the theorem statement; `∃ c` forms `Wt_triangle_exists`, `Bt_triangle_exists`), same for `Bt_cond` | — | `Wt_triangle`, `Bt_triangle` (`Triangle.lean`) | ✅ |
 | Bit-content ledger and production-dominates-output | — | `traceBits`, `size_output_le_traceBits` (`Trace.lean`) | ✅ |
 | Write/transition separation instance (linear, not unbounded) | — | `precLoop_ledgers` (`Examples.lean`) | ✅ |
 | Measure-level `Kt ≤ Wt + O(1)` (uniform additive constant) | — | as open against the step clock as against fuel; the per-witness log penalty is the proven form | ❌ |
@@ -133,18 +133,18 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Write-measure rate and its comparison to the time rate | — | `wtProfile`, `wtProfile_cast`, `wtRate`, `wtRate_le_ktRate` | ✅ |
 | A sequence of positive `Kt`-rate and zero `K`-rate (computational depth as a density) | — | not constructed; the layer provides only the bracketing theorems | ❌ |
 
-## The probabilistic layer
+## The randomized layer
 
 | Result | Source | Lean | Status |
 |---|---|---|---|
-| Random tapes (`Fin R → Bool`, `2 ^ R` of them), success within a time cutoff, success count, two-thirds majority — parameterized by how the tape enters the context | Oliveira19 (convention) | `card_randomTapes`, `SucceedsOn`, `successCountAt`, `successCount`, `HasMajorityAt`, `HasMajority` (`Probabilistic.lean`) | ✅ |
-| Monotonicity in the time bound (definitional from the `∃ t' ≤ t` cutoff) | — | `SucceedsOn.mono`, `successCountAt_mono`, `successCount_mono`, `HasMajorityAt.mono`, `HasMajority.mono` | ✅ |
-| The probabilistic measure, randomness as context; tape length minimized over but unpriced | Oliveira19, GKLO22 | `pKtAt`, `pKt`, `ctxJoin`, `pKt_cond` | ✅ |
-| Witness upper bound from any majority | — | `pKtAt_le_of_hasMajority` | ✅ |
-| **Zero-constant embeddings** `pKt(x) ≤ Kt(x)` and `pKt(x\|y) ≤ Kt(x)` — the context-erasing witness succeeds on every random tape | deterministic-to-probabilistic comparison, here with constant `0` | `pKt_le_Kt`, `pKt_cond_le_Kt`; general form `pKtAt_le_Kt`, via `exists_forall_succeedsOn_Kt`, `hasMajorityAt_of_forall_succeedsOn` | ✅ |
-| Positivity and everywhere-finiteness | — | `one_le_pKt`, `one_le_pKt_cond`, `pKt_lt_top`, `pKt_cond_lt_top`; general forms `one_le_pKtAt`, `HasMajorityAt.one_le_programLength` | ✅ |
-| Conditioning for the probabilistic measure, `pKt(x\|y) ≤ pKt(x)` | LV (analogue of the deterministic conditioning) | the erase bits discard conditioning string and randomness together; the statement needs a randomness-preserving erase — a machine variant discarding `y` while keeping the tape — a further machine-design step | ❌ |
-| Coding theorem and average-case applications for the probabilistic measure | Oliveira19, GKLO22 | require probability-weighted enumeration and clocked self-simulation — the linear-overhead self-interpreter open item (see Invariance scope) | ➖ (out of scope) |
+| Random tapes tied to the clock (`Fin t → Bool`, `2 ^ t` of them at time bound `t`), success within the cutoff, success count, two-thirds majority — parameterized by how the tape enters the context | Oliveira19 (style; differences stated in the measure row below) | `card_randomTapes`, `SucceedsOn`, `successCountAt`, `successCount`, `HasMajorityAt`, `HasMajority` (`Probabilistic.lean`) | ✅ |
+| Per-tape monotonicity in the time bound (definitional from the `∃ t' ≤ t` cutoff); no count-level analogue — the tape space varies with `t`, so the count/majority monotonicity conveniences of the earlier fixed-length-cutoff draft are removed | — | `SucceedsOn.mono` | ✅ |
+| The randomized measure, in the style of Oliveira's `rKt` (program fixed first, majority over random tapes, description and time priced, randomness free), with stated differences: machine-relative (no randomized invariance theorem); randomness as a context bitstring, not a separate random tape; tape length exactly the time bound `t`, not a separately minimized unpriced parameter. The GKLO `pKt` — description varying with the random string, a different quantifier order — is **not** formalized | Oliveira19 (style), GKLO22 (comparison only) | `rKtAt`, `rKt`, `ctxJoin`, `rKt_cond` | ✅ |
+| Witness upper bound from any majority | — | `rKtAt_le_of_hasMajority` | ✅ |
+| **Zero-constant embeddings** `rKt(x) ≤ Kt(x)` and `rKt(x\|y) ≤ Kt(x)` — the context-erasing witness succeeds on every random tape of its own time bound | deterministic-to-randomized comparison, here with constant `0` | `rKt_le_Kt`, `rKt_cond_le_Kt`; general form `rKtAt_le_Kt`, via `exists_forall_succeedsOn_Kt`, `hasMajorityAt_of_forall_succeedsOn` | ✅ |
+| Positivity and everywhere-finiteness | — | `one_le_rKt`, `one_le_rKt_cond`, `rKt_lt_top`, `rKt_cond_lt_top`; general forms `one_le_rKtAt`, `HasMajorityAt.one_le_programLength` | ✅ |
+| Conditioning for the randomized measure, `rKt(x\|y) ≤ rKt(x)` | LV (analogue of the deterministic conditioning) | the erase bits discard conditioning string and randomness together; the statement needs a randomness-preserving erase — a machine variant discarding `y` while keeping the tape — a further machine-design step | ❌ |
+| The GKLO `pKt` (description varying with the random string), the coding theorem, and the average-case applications | Oliveira19, GKLO22 | `pKt` is a different quantifier order from the fixed-program majority formalized here; the coding theorem and average-case theory require probability-weighted enumeration and clocked self-simulation — the linear-overhead self-interpreter open item (see Invariance scope) | ➖ (out of scope) |
 
 ## Certified evaluation
 
@@ -194,8 +194,8 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
   layer): the analogue of ladder levels 2–3 over the `2 ^ n` denominator needs a
   uniform encoding of the arity as an input tape and a table-normalized unary-prefix
   absorption; only the witness form is proved.
-- Conditioning for the probabilistic measure (the ❌ in the probabilistic layer):
-  `pKt(x|y) ≤ pKt(x)` needs a randomness-preserving context-erase convention — a
+- Conditioning for the randomized measure (the ❌ in the randomized layer):
+  `rKt(x|y) ≤ rKt(x)` needs a randomness-preserving context-erase convention — a
   machine variant that discards the conditioning string while keeping the random
   tape. The present erase bits discard the whole context, which is exactly what makes the
   deterministic embeddings zero-constant and is too coarse for this statement.

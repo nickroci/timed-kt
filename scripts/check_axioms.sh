@@ -31,7 +31,8 @@ THEOREMS=(
   TimedKt.ktRate_le_one
   TimedKt.ktRate_eq_zero_of_witnesses
   TimedKt.ttKtRate_le_one
-  TimedKt.pKt_le_Kt
+  TimedKt.rKt_le_Kt
+  TimedKt.rKt_cond_le_Kt
   TimedKt.Kt_cond_le_of_flaggedRuns
   TimedKt.Kt_nil
 )
