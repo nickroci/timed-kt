@@ -19,6 +19,8 @@ THEOREMS=(
   TimedKt.Kt_cond_le_of_flaggedRunsW
   TimedKt.Kt_triangle
   TimedKt.Kt_le_Kt_cond_add_Kt
+  TimedKt.Wt_triangle
+  TimedKt.Bt_triangle
   TimedKt.compRuns_iff_produces
   TimedKt.isDecompressor_compUniversal
   TimedKt.universalRuns_iff_produces

@@ -111,4 +111,103 @@ theorem Kt_le_Kt_cond_add_Kt : ∃ c : ℕ, ∀ (x y : BitString) (n₁ n₂ : �
   obtain ⟨c, hc⟩ := Kt_triangle
   exact ⟨c, fun x y n₁ n₂ h₁ h₂ => hc x y [] n₁ n₂ h₁ h₂⟩
 
+/-! ### The ledger triangles
+
+The write and bit ledgers compose over the same comp tape: a composition node's
+ledger is the sum of its stages' ledgers, and the flags and the gamma scan commit
+nothing. The time-side log-of-log terms therefore disappear, and only the
+description-side gamma code survives: the overhead is `2 ⌈log₂⌉ + 4`. -/
+
+/-- Attainment for the write measure: a finite `Wt_cond` is attained by an actual
+write-ledgered run, at exactly the measured cost. -/
+theorem exists_compRunsW_Wt_cond {x y : BitString} {m : ℕ}
+    (h : Wt_cond x y = (m : ENat)) :
+    ∃ p t w, CompRunsW p y x t w ∧ programLength p + ceilLog2 w = m := by
+  have hlt : Wt_cond x y < ⊤ := by rw [h]; exact ENat.natCast_lt_top _
+  have hne : {n : ℕ | ∃ p t w, CompRunsW p y x t w ∧
+      programLength p + ceilLog2 w = n}.Nonempty := by
+    obtain ⟨n, hn, -⟩ := sInf_lt_iff.mp hlt
+    obtain ⟨p, t, w, hrun, rfl⟩ := hn
+    exact ⟨programLength p + ceilLog2 w, p, t, w, hrun, rfl⟩
+  obtain ⟨p, t, w, hrun, hpt⟩ := Nat.sInf_mem hne
+  refine ⟨p, t, w, hrun, ?_⟩
+  have hattain : Wt_cond x y = ((programLength p + ceilLog2 w : ℕ) : ENat) := by
+    refine le_antisymm (Wt_cond_le_of_compRunsW hrun) (le_sInf ?_)
+    rintro n ⟨q, u, v, hq, rfl⟩
+    exact Nat.cast_le.mpr (hpt.trans_le (Nat.sInf_le ⟨q, u, v, hq, rfl⟩))
+  rw [h] at hattain
+  exact_mod_cast hattain.symm
+
+/-- Attainment for the bit measure: a finite `Bt_cond` is attained by an actual
+bit-ledgered run, at exactly the measured cost. -/
+theorem exists_compRunsB_Bt_cond {x y : BitString} {m : ℕ}
+    (h : Bt_cond x y = (m : ENat)) :
+    ∃ p t b, CompRunsB p y x t b ∧ programLength p + ceilLog2 b = m := by
+  have hlt : Bt_cond x y < ⊤ := by rw [h]; exact ENat.natCast_lt_top _
+  have hne : {n : ℕ | ∃ p t b, CompRunsB p y x t b ∧
+      programLength p + ceilLog2 b = n}.Nonempty := by
+    obtain ⟨n, hn, -⟩ := sInf_lt_iff.mp hlt
+    obtain ⟨p, t, b, hrun, rfl⟩ := hn
+    exact ⟨programLength p + ceilLog2 b, p, t, b, hrun, rfl⟩
+  obtain ⟨p, t, b, hrun, hpt⟩ := Nat.sInf_mem hne
+  refine ⟨p, t, b, hrun, ?_⟩
+  have hattain : Bt_cond x y = ((programLength p + ceilLog2 b : ℕ) : ENat) := by
+    refine le_antisymm (Bt_cond_le_of_compRunsB hrun) (le_sInf ?_)
+    rintro n ⟨q, u, v, hq, rfl⟩
+    exact Nat.cast_le.mpr (hpt.trans_le (Nat.sInf_le ⟨q, u, v, hq, rfl⟩))
+  rw [h] at hattain
+  exact_mod_cast hattain.symm
+
+/-- **The triangle inequality for the write measure**, with the explicit constant
+`c = 4`: the same witness composition as `Kt_triangle`, but the ledger of the comp
+node is the plain sum `w₂ + w₁`, so only the description-side gamma code and one
+bit of `ceilLog2` subadditivity remain. -/
+theorem Wt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
+    Wt_cond x y = (m₁ : ENat) → Wt_cond y z = (m₂ : ENat) →
+    Wt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + c : ℕ) : ENat) := by
+  refine ⟨4, fun x y z m₁ m₂ h₁ h₂ => ?_⟩
+  obtain ⟨p₁, t₁, w₁, hr₁, hm₁⟩ := exists_compRunsW_Wt_cond h₁
+  obtain ⟨p₂, t₂, w₂, hr₂, hm₂⟩ := exists_compRunsW_Wt_cond h₂
+  have hcomp : CompRunsW (true :: false :: (gammaCode p₁.length ++ p₁ ++ p₂)) z x
+      (t₂ + t₁ + (gammaCode p₁.length).length + 2) (w₂ + w₁) :=
+    CompRunsW.comp (b := false) hr₂ hr₁
+  refine le_trans (Wt_cond_le_of_compRunsW hcomp) ?_
+  refine Nat.cast_le.mpr ?_
+  have hGval : (gammaCode p₁.length).length = 2 * ceilLog2 (p₁.length + 1) + 1 :=
+    gammaCode_length p₁.length
+  have hlen : programLength (true :: false :: (gammaCode p₁.length ++ p₁ ++ p₂)) =
+      (gammaCode p₁.length).length + p₁.length + p₂.length + 2 := by
+    simp only [programLength, List.length_cons, List.length_append]
+  have hlog : ceilLog2 (w₂ + w₁) ≤ ceilLog2 w₂ + ceilLog2 w₁ + 1 :=
+    ceilLog2_add_le _ _
+  have hmono : ceilLog2 (p₁.length + 1) ≤ ceilLog2 (m₁ + 1) :=
+    ceilLog2_mono (by simp only [programLength] at hm₁; omega)
+  simp only [programLength] at hlen hm₁ hm₂ ⊢
+  omega
+
+/-- **The triangle inequality for the bit measure**, with the explicit constant
+`c = 4`: identical to `Wt_triangle` over the bit ledger. -/
+theorem Bt_triangle : ∃ c : ℕ, ∀ (x y z : BitString) (m₁ m₂ : ℕ),
+    Bt_cond x y = (m₁ : ENat) → Bt_cond y z = (m₂ : ENat) →
+    Bt_cond x z ≤ ((m₁ + m₂ + 2 * ceilLog2 (m₁ + 1) + c : ℕ) : ENat) := by
+  refine ⟨4, fun x y z m₁ m₂ h₁ h₂ => ?_⟩
+  obtain ⟨p₁, t₁, b₁, hr₁, hm₁⟩ := exists_compRunsB_Bt_cond h₁
+  obtain ⟨p₂, t₂, b₂, hr₂, hm₂⟩ := exists_compRunsB_Bt_cond h₂
+  have hcomp : CompRunsB (true :: false :: (gammaCode p₁.length ++ p₁ ++ p₂)) z x
+      (t₂ + t₁ + (gammaCode p₁.length).length + 2) (b₂ + b₁) :=
+    CompRunsB.comp (fl := false) hr₂ hr₁
+  refine le_trans (Bt_cond_le_of_compRunsB hcomp) ?_
+  refine Nat.cast_le.mpr ?_
+  have hGval : (gammaCode p₁.length).length = 2 * ceilLog2 (p₁.length + 1) + 1 :=
+    gammaCode_length p₁.length
+  have hlen : programLength (true :: false :: (gammaCode p₁.length ++ p₁ ++ p₂)) =
+      (gammaCode p₁.length).length + p₁.length + p₂.length + 2 := by
+    simp only [programLength, List.length_cons, List.length_append]
+  have hlog : ceilLog2 (b₂ + b₁) ≤ ceilLog2 b₂ + ceilLog2 b₁ + 1 :=
+    ceilLog2_add_le _ _
+  have hmono : ceilLog2 (p₁.length + 1) ≤ ceilLog2 (m₁ + 1) :=
+    ceilLog2_mono (by simp only [programLength] at hm₁; omega)
+  simp only [programLength] at hlen hm₁ hm₂ ⊢
+  omega
+
 end TimedKt
