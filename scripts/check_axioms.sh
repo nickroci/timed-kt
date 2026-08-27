@@ -30,7 +30,9 @@ THEOREMS=(
   TimedKt.fuel_exceeds_writes_unboundedly
   TimedKt.ktRate_le_one
   TimedKt.ktRate_eq_zero_of_witnesses
+  TimedKt.ktRate_eq_zero_of_uniform_code
   TimedKt.ttKtRate_le_one
+  TimedKt.ttKtRate_eq_zero_of_witnesses
   TimedKt.rKt_le_Kt
   TimedKt.rKt_cond_le_Kt
   TimedKt.Kt_cond_le_of_flaggedRuns
