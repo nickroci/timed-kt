@@ -19,6 +19,8 @@ THEOREMS=(
   TimedKt.Kt_cond_le_of_flaggedRunsW
   TimedKt.universalRuns_iff_produces
   TimedKt.Run.deterministic
+  TimedKt.runBounded_sound
+  TimedKt.runBounded_complete
   TimedKt.fuel_exceeds_writes_unboundedly
   TimedKt.ktRate_le_one
   TimedKt.ktRate_eq_zero_of_witnesses

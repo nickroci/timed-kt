@@ -23,8 +23,12 @@ makes the evaluator complete and not merely sound.
 
 ## Main results
 
-* `runBounded`: the executable, budget-structural evaluator.
 * `runBounded_sound`: a success of the evaluator is a `Run` derivation within budget.
+* `runBounded_complete`: every `Run` derivation is found at any sufficient budget.
+* `runBounded_eq_some_iff`: the two directions packaged as an equivalence.
+* `runBounded_isSome_iff` and the resulting `Decidable` instance: **bounded halting
+  is decidable** — `∃ T s, Run c n T s ∧ s ≤ b` is decided by running `runBounded`.
+* `numSteps_of_runBounded`: a success computes `numSteps` exactly.
 -/
 
 open Nat.Partrec
@@ -173,5 +177,122 @@ theorem runBounded_sound {b : ℕ} {c : Code} {n : ℕ} {T : List ℕ} {s : ℕ}
                 (rx.1 ++ rr.1) (rx.2 + rr.2 + 1) := Run.rfindStep hrx hgl hx0 hrr
             rw [hn] at key
             exact ⟨key, hle⟩
+
+/-! ### Completeness -/
+
+/-- **Completeness.** Every evaluation derivation is found by the evaluator at any
+budget that accommodates its transition count — with the exact trace and the exact
+count. -/
+theorem runBounded_complete {c : Code} {n : ℕ} {T : List ℕ} {s : ℕ} (h : Run c n T s) :
+    ∀ b, s ≤ b → runBounded b c n = some (T, s) := by
+  induction h with
+  | zero n =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      rw [runBounded]
+  | succ n =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      rw [runBounded]
+  | left n =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      rw [runBounded]
+  | right n =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      rw [runBounded]
+  | @pair cf cg n tf tg vf vg sf sg hf hg hvf hvg ihf ihg =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      have h1 := hf.one_le_steps
+      have h2 := hg.one_le_steps
+      rw [runBounded]
+      simp only [bind, Option.bind_eq_some_iff, Option.guard_eq_some']
+      exact ⟨(tf, sf), ihf b (by omega), (tg, sg), ihg b (by omega), vf, hvf, vg, hvg,
+        (), by omega, rfl⟩
+  | @comp cf cg n tg tf vg sg sf hg hvg hf ihg ihf =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      have h1 := hg.one_le_steps
+      have h2 := hf.one_le_steps
+      rw [runBounded]
+      simp only [bind, Option.bind_eq_some_iff, Option.guard_eq_some']
+      exact ⟨(tg, sg), ihg b (by omega), vg, hvg, (tf, sf), ihf b (by omega),
+        (), by omega, rfl⟩
+  | @precZero cf cg a t s hs ih =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      rw [runBounded]
+      simp only [Nat.unpaired, Nat.unpair_pair, Nat.rec_zero, bind,
+        Option.bind_eq_some_iff]
+      exact ⟨(t, s), ih b (by omega), rfl⟩
+  | @precSucc cf cg a y ti tg vi si sg hi hvi hg ihi ihg =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      have h1 := hi.one_le_steps
+      have h2 := hg.one_le_steps
+      rw [runBounded]
+      simp only [Nat.unpaired, Nat.unpair_pair, bind, Option.bind_eq_some_iff,
+        Option.guard_eq_some']
+      exact ⟨(ti, si), ihi b (by omega), vi, hvi, (tg, sg), ihg b (by omega),
+        (), by omega, rfl⟩
+  | @rfindFound cf a m tx sx hx hgl ih =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      rw [runBounded]
+      simp only [Nat.unpaired, Nat.unpair_pair, bind, Option.bind_eq_some_iff]
+      refine ⟨(tx, sx), ih b (by omega), 0, hgl, ?_⟩
+      simp
+  | @rfindStep cf a m x tx tr sx sr hx hgl hx0 hr ihx ihr =>
+      intro b hb
+      obtain ⟨b, rfl⟩ : ∃ b', b = b' + 1 := ⟨b - 1, by omega⟩
+      have h1 := hx.one_le_steps
+      have h2 := hr.one_le_steps
+      rw [runBounded]
+      simp only [Nat.unpaired, Nat.unpair_pair, bind, Option.bind_eq_some_iff]
+      refine ⟨(tx, sx), ihx b (by omega), x, hgl, ?_⟩
+      rw [if_neg hx0]
+      simp only [Option.bind_eq_some_iff, Option.guard_eq_some']
+      exact ⟨(tr, sr), ihr b (by omega), (), by omega, rfl⟩
+
+/-! ### The equivalence, decidable bounded halting, and agreement with `numSteps` -/
+
+/-- The evaluator succeeds with `(T, s)` exactly when `Run` derives `(T, s)` within
+the budget. -/
+theorem runBounded_eq_some_iff {b : ℕ} {c : Code} {n : ℕ} {T : List ℕ} {s : ℕ} :
+    runBounded b c n = some (T, s) ↔ Run c n T s ∧ s ≤ b :=
+  ⟨runBounded_sound, fun ⟨h, hs⟩ => runBounded_complete h b hs⟩
+
+/-- A success at a smaller budget is a success at every larger budget, unchanged. -/
+theorem runBounded_mono {b₁ b₂ : ℕ} {c : Code} {n : ℕ} {r : List ℕ × ℕ}
+    (hb : b₁ ≤ b₂) (h : runBounded b₁ c n = some r) : runBounded b₂ c n = some r := by
+  obtain ⟨T, s⟩ := r
+  obtain ⟨hrun, hs⟩ := runBounded_sound h
+  exact runBounded_complete hrun b₂ (le_trans hs hb)
+
+/-- **Bounded halting, semi-packaged**: a derivation within budget exists exactly when
+the evaluator succeeds. -/
+theorem runBounded_isSome_iff {b : ℕ} {c : Code} {n : ℕ} :
+    (∃ T s, Run c n T s ∧ s ≤ b) ↔ (runBounded b c n).isSome = true := by
+  constructor
+  · rintro ⟨T, s, hrun, hs⟩
+    rw [runBounded_complete hrun b hs]
+    rfl
+  · intro h
+    obtain ⟨⟨T, s⟩, hTs⟩ := Option.isSome_iff_exists.mp h
+    obtain ⟨hrun, hs⟩ := runBounded_sound hTs
+    exact ⟨T, s, hrun, hs⟩
+
+/-- **Bounded halting is decidable**: whether `c` on `n` halts within `b` transitions
+is decided by running the evaluator. -/
+instance decidableRunWithin (b : ℕ) (c : Code) (n : ℕ) :
+    Decidable (∃ T s, Run c n T s ∧ s ≤ b) :=
+  decidable_of_iff' _ runBounded_isSome_iff
+
+/-- A success of the evaluator computes the transition count `numSteps` exactly. -/
+theorem numSteps_of_runBounded {b : ℕ} {c : Code} {n : ℕ} {T : List ℕ} {s : ℕ}
+    (h : runBounded b c n = some (T, s)) : numSteps c n = (s : ℕ∞) :=
+  numSteps_eq_of_run (runBounded_sound h).1
 
 end TimedKt
