@@ -17,7 +17,7 @@ natural-number casts, so a finite infimum is the cast of the least realized cost
 that cost is priced off an actual run. Attainment turns statements about the measure
 into statements about concrete runs of the machine.
 
-**Witness runtime.** At the flagged universal machine `Kt_cond` is everywhere finite
+**Witness runtime.** At the composing universal machine `Kt_cond` is everywhere finite
 (`Kt_cond_lt_top`, from the length upper bound `Kt_cond_le_length`), so attainment
 needs no hypothesis there: for every `x` and `y` some optimal run produces `x` from
 `y`, and its transition count is at most two to the measured complexity
@@ -84,15 +84,15 @@ theorem Kt_lt_top (x : BitString) : Kt x < ⊤ :=
 /-! ### The witness runtime bound -/
 
 /-- **The witness runtime bound.** For every `x` and `y` there is an optimal run of
-the flagged machine: `FlaggedRuns p y x t` with `Kt_cond x y = n` and `t ≤ 2 ^ n`.
+the composing machine: `CompRuns p y x t` with `Kt_cond x y = n` and `t ≤ 2 ^ n`.
 The measured complexity prices the witness's program length and the ceiling logarithm
 of its transition count together, so the count itself is at most `2 ^ n`: each bit of
 measured complexity at most doubles the honest runtime of the optimal witness. -/
 theorem exists_run_time_le_two_pow_Kt_cond (x y : BitString) :
     ∃ (p : BitString) (t n : ℕ),
-      FlaggedRuns p y x t ∧ Kt_cond x y = (n : ENat) ∧ t ≤ 2 ^ n := by
+      CompRuns p y x t ∧ Kt_cond x y = (n : ENat) ∧ t ≤ 2 ^ n := by
   obtain ⟨p, t, hrun, heq⟩ :=
-    timedFlaggedUniversal.exists_runs_condKt (Kt_cond_lt_top x y)
+    timedCompUniversal.exists_runs_condKt (Kt_cond_lt_top x y)
   refine ⟨p, t, programLength p + ceilLog2 t, hrun, heq, ?_⟩
   calc t ≤ 2 ^ ceilLog2 t := le_two_pow_ceilLog2 t
     _ ≤ 2 ^ (programLength p + ceilLog2 t) :=
@@ -136,7 +136,7 @@ some run produces `x` from `y` within `2 ^ (m - g)` transitions: every bit of
 information the context carries about `x` halves the worst-case witness runtime. -/
 theorem exists_run_time_le_two_pow_of_ktTransfer {x y : BitString} {m g : ℕ}
     (hK : Kt x = (m : ENat)) (hg : ktTransfer y x = (g : ENat)) :
-    ∃ p t, FlaggedRuns p y x t ∧ t ≤ 2 ^ (m - g) := by
+    ∃ p t, CompRuns p y x t ∧ t ≤ 2 ^ (m - g) := by
   obtain ⟨p, t, n, hrun, hn, ht⟩ := exists_run_time_le_two_pow_Kt_cond x y
   have hsum : ((g + n : ℕ) : ENat) = ((m : ℕ) : ENat) := by
     rw [Nat.cast_add, ← hg, ← hn, ← hK]

@@ -17,6 +17,10 @@ THEOREMS=(
   TimedKt.Kt_cond_le_length
   TimedKt.Wt_cond_le_Kt_cond
   TimedKt.Kt_cond_le_of_flaggedRunsW
+  TimedKt.Kt_triangle
+  TimedKt.Kt_le_Kt_cond_add_Kt
+  TimedKt.compRuns_iff_produces
+  TimedKt.isDecompressor_compUniversal
   TimedKt.universalRuns_iff_produces
   TimedKt.Run.deterministic
   TimedKt.fuel_exceeds_writes_unboundedly

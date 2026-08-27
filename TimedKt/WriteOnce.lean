@@ -12,17 +12,21 @@ import TimedKt.Kt
 The operational relation `Run` carries the write-once trace alongside its transition
 count, so the universal machines have a second ledger for free: the number of values
 the simulated code commits to its append-only tape. This module exposes that ledger —
-`UniversalRunsW` for the unflagged machine, `FlaggedRunsW` for the public flagged
-machine — and defines the write-priced complexity
+`UniversalRunsW` for the unflagged machine, `FlaggedRunsW` for the flagged machine,
+`CompRunsW` for the public composing machine — and defines the write-priced
+complexity
 
-* `Wt_cond x y = min { |p| + ceilLog2 w : the flagged machine runs p on context y,
+* `Wt_cond x y = min { |p| + ceilLog2 w : the composing machine runs p on context y,
   producing x with w committed writes }`, and `Wt x = Wt_cond x []`.
 
 ## Write convention
 
 The write ledger of a run is the length of the simulated code's write-once trace
 (`T.length`): the context flag, the unary-prefix scan, and the result decode commit
-nothing. As with the clock, this convention is fixed here and quoted in the README.
+nothing. On the composing layer the comp flag, the erase bit, and the gamma scan
+commit nothing either, and a composition node's ledger is the sum of its stages'
+ledgers (`w = w₂ + w₁`). As with the clock, this convention is fixed here and quoted
+in the README.
 
 ## Relation to the transition-priced `Kt`
 
@@ -34,11 +38,12 @@ the two ledgers are tightly coupled:
 * `Wt_cond_le_Kt_cond` — every write is a transition, on the same run of the same
   program, so `Wt_cond ≤ Kt_cond` with no overhead at all;
 * `Kt_cond_le_of_flaggedRunsW` — transitions are linear in writes per fixed code
-  (`Run.steps_le`), so each write witness bounds `Kt_cond` within an additive penalty
-  logarithmic in the witness's own description data.
+  (`Run.steps_le`), so each flagged write witness bounds `Kt_cond` within an additive
+  penalty logarithmic in the witness's own description data (plus the two-unit embed
+  cost of the composing layer).
 
 The conditioning theorem also holds for the write measure, with constant zero
-(`Wt_cond_le_Wt`), by the same context flag.
+(`Wt_cond_le_Wt`), by the same root bit flip as `Kt_cond_le_Kt`.
 -/
 
 open Nat.Partrec Kolmogorov
@@ -153,11 +158,121 @@ theorem FlaggedRunsW.unique {s y x₁ x₂ : BitString} {t₁ t₂ w₁ w₂ : �
   obtain ⟨rfl, rfl, rfl⟩ := hw₁.unique hw₂
   exact ⟨rfl, rfl, rfl⟩
 
-/-- **Conditional write-priced complexity** over the flagged universal machine:
+/-- Every flagged write-ledgered run commits at least one write. -/
+theorem FlaggedRunsW.one_le_writes {s y x : BitString} {t w : ℕ}
+    (h : FlaggedRunsW s y x t w) : 1 ≤ w := by
+  obtain ⟨b, p, t', -, hU, -⟩ := h
+  exact hU.one_le_writes
+
+/-- Writes never exceed the transition count of the same flagged run. -/
+theorem FlaggedRunsW.writes_le_time {s y x : BitString} {t w : ℕ}
+    (h : FlaggedRunsW s y x t w) : w ≤ t := by
+  obtain ⟨b, p, t', -, hU, rfl⟩ := h
+  have := hU.writes_le_time
+  omega
+
+/-! ### The write ledger of the composing machine -/
+
+/-- The clocked composing machine with its **write ledger**: the comp flag, the
+erase bit, and the gamma scan commit nothing, an embed node carries the flagged
+ledger, and a composition node's ledger is the sum of its stages' ledgers. -/
+inductive CompRunsW : BitString → BitString → BitString → ℕ → ℕ → Prop
+  | embed {s z x : BitString} {t w : ℕ} :
+      FlaggedRunsW s z x t w → CompRunsW (false :: s) z x (t + 1) w
+  | comp {b : Bool} {p₁ p₂ z y x : BitString} {t₂ t₁ w₂ w₁ : ℕ} :
+      CompRunsW p₂ (bif b then [] else z) y t₂ w₂ →
+      CompRunsW p₁ y x t₁ w₁ →
+      CompRunsW (true :: b :: (gammaCode p₁.length ++ p₁ ++ p₂)) z x
+        (t₂ + t₁ + (gammaCode p₁.length).length + 2) (w₂ + w₁)
+
+/-- Inversion of an embed node of the write-ledgered relation. -/
+theorem CompRunsW.embed_inv {s z x : BitString} {t w : ℕ}
+    (h : CompRunsW (false :: s) z x t w) :
+    ∃ t', FlaggedRunsW s z x t' w ∧ t = t' + 1 := by
+  cases h with
+  | embed hF => exact ⟨_, hF, rfl⟩
+
+/-- Inversion of a composition node of the write-ledgered relation. -/
+theorem CompRunsW.comp_inv {b : Bool} {r z x : BitString} {t w : ℕ}
+    (h : CompRunsW (true :: b :: r) z x t w) :
+    ∃ (p₁ p₂ y : BitString) (t₂ t₁ w₂ w₁ : ℕ),
+      r = gammaCode p₁.length ++ p₁ ++ p₂ ∧
+      CompRunsW p₂ (bif b then [] else z) y t₂ w₂ ∧
+      CompRunsW p₁ y x t₁ w₁ ∧
+      t = t₂ + t₁ + (gammaCode p₁.length).length + 2 ∧ w = w₂ + w₁ := by
+  cases h with
+  | comp h₂ h₁ => exact ⟨_, _, _, _, _, _, _, rfl, h₂, h₁, rfl, rfl⟩
+
+/-- Forgetting the write ledger: every write-ledgered run is a clocked run. -/
+theorem CompRunsW.toCompRuns {s z x : BitString} {t w : ℕ}
+    (h : CompRunsW s z x t w) : CompRuns s z x t := by
+  induction h with
+  | embed hF =>
+      exact CompRuns.embed ((flaggedRuns_iff_flaggedRunsW _ _ _ _).mpr ⟨_, hF⟩)
+  | comp _ _ ih₂ ih₁ => exact CompRuns.comp ih₂ ih₁
+
+/-- Every clocked run carries a write ledger. -/
+theorem CompRuns.exists_compRunsW {s z x : BitString} {t : ℕ}
+    (h : CompRuns s z x t) : ∃ w, CompRunsW s z x t w := by
+  induction h with
+  | embed hF =>
+      obtain ⟨w, hw⟩ := (flaggedRuns_iff_flaggedRunsW _ _ _ _).mp hF
+      exact ⟨w, CompRunsW.embed hw⟩
+  | comp _ _ ih₂ ih₁ =>
+      obtain ⟨w₂, h₂⟩ := ih₂
+      obtain ⟨w₁, h₁⟩ := ih₁
+      exact ⟨w₂ + w₁, CompRunsW.comp h₂ h₁⟩
+
+/-- Forgetting the write ledger gives exactly the clocked composing relation. -/
+theorem compRuns_iff_compRunsW (s z x : BitString) (t : ℕ) :
+    CompRuns s z x t ↔ ∃ w, CompRunsW s z x t w :=
+  ⟨CompRuns.exists_compRunsW, fun ⟨_, hw⟩ => hw.toCompRuns⟩
+
+/-- Output, transition count, and write count are unique per tape and context. -/
+theorem CompRunsW.unique {s z x₁ x₂ : BitString} {t₁ t₂ w₁ w₂ : ℕ}
+    (h₁ : CompRunsW s z x₁ t₁ w₁) (h₂ : CompRunsW s z x₂ t₂ w₂) :
+    x₁ = x₂ ∧ t₁ = t₂ ∧ w₁ = w₂ := by
+  revert h₂
+  induction h₁ generalizing x₂ t₂ w₂ with
+  | embed hF =>
+      intro h₂
+      obtain ⟨t', hF', rfl⟩ := CompRunsW.embed_inv h₂
+      obtain ⟨rfl, rfl, rfl⟩ := hF.unique hF'
+      exact ⟨rfl, rfl, rfl⟩
+  | comp hp₂ hp₁ ih₂ ih₁ =>
+      intro h₂
+      obtain ⟨q₁, q₂, y', t₂', t₁', w₂', w₁', hlist, hq₂, hq₁, rfl, rfl⟩ :=
+        CompRunsW.comp_inv h₂
+      rw [List.append_assoc, List.append_assoc] at hlist
+      obtain ⟨hlen, happ⟩ := gammaCode_append_inj hlist
+      obtain ⟨rfl, rfl⟩ := List.append_inj happ (by omega)
+      obtain ⟨rfl, rfl, rfl⟩ := ih₂ hq₂
+      obtain ⟨rfl, rfl, rfl⟩ := ih₁ hq₁
+      exact ⟨rfl, rfl, rfl⟩
+
+/-- Every write-ledgered composing run commits at least one write. -/
+theorem CompRunsW.one_le_writes {s z x : BitString} {t w : ℕ}
+    (h : CompRunsW s z x t w) : 1 ≤ w := by
+  induction h with
+  | embed hF => exact hF.one_le_writes
+  | comp _ _ ih₂ ih₁ => omega
+
+/-- Writes never exceed the transition count of the same composing run. -/
+theorem CompRunsW.writes_le_time {s z x : BitString} {t w : ℕ}
+    (h : CompRunsW s z x t w) : w ≤ t := by
+  induction h with
+  | embed hF =>
+      have := hF.writes_le_time
+      omega
+  | comp _ _ ih₂ ih₁ => omega
+
+/-! ### The write-priced complexity -/
+
+/-- **Conditional write-priced complexity** over the composing universal machine:
 `Wt_cond x y = min { |p| + ceilLog2 w }` over write-ledgered runs producing `x` from
 context `y`. -/
 noncomputable def Wt_cond (x y : BitString) : ENat :=
-  sInf {n | ∃ p t w, FlaggedRunsW p y x t w ∧
+  sInf {n | ∃ p t w, CompRunsW p y x t w ∧
     ((programLength p + ceilLog2 w : ℕ) : ENat) = n}
 
 /-- **Write-priced complexity**: `Wt x = Wt_cond x []`. -/
@@ -165,39 +280,37 @@ noncomputable def Wt (x : BitString) : ENat :=
   Wt_cond x []
 
 /-- A write-ledgered run gives a witness upper bound on `Wt_cond`. -/
-theorem Wt_cond_le_of_flaggedRunsW {p y x : BitString} {t w : ℕ}
-    (h : FlaggedRunsW p y x t w) :
+theorem Wt_cond_le_of_compRunsW {p y x : BitString} {t w : ℕ}
+    (h : CompRunsW p y x t w) :
     Wt_cond x y ≤ ((programLength p + ceilLog2 w : ℕ) : ENat) :=
   sInf_le ⟨p, t, w, h, rfl⟩
 
 /-- The library's conditional complexity bounds `Wt_cond` from below: dropping the
 write ledger only shrinks the cost. -/
 theorem K_cond_le_Wt_cond (x y : BitString) :
-    condK flaggedUniversal x y ≤ Wt_cond x y := by
+    condK compUniversal x y ≤ Wt_cond x y := by
   refine le_sInf ?_
   rintro n ⟨p, t, w, hrun, rfl⟩
-  have hprod : produces flaggedUniversal p y x :=
-    (flaggedRuns_iff_produces p y x).mpr
-      ⟨t, (flaggedRuns_iff_flaggedRunsW p y x t).mpr ⟨w, hrun⟩⟩
-  calc condK flaggedUniversal x y
+  have hprod : produces compUniversal p y x :=
+    (compRuns_iff_produces p y x).mpr ⟨t, hrun.toCompRuns⟩
+  calc condK compUniversal x y
       ≤ ((programLength p : ℕ) : ENat) := sInf_le ⟨p, hprod, rfl⟩
     _ ≤ ((programLength p + ceilLog2 w : ℕ) : ENat) := by
         exact_mod_cast Nat.le_add_right _ _
 
-/-- `Wt_cond` is finite exactly on the outputs the flagged machine produces — the
+/-- `Wt_cond` is finite exactly on the outputs the composing machine produces — the
 write-ledger analogue of `Kt_cond_lt_top_iff`. -/
 theorem Wt_cond_lt_top_iff {x y : BitString} :
-    Wt_cond x y < ⊤ ↔ ∃ p, produces flaggedUniversal p y x := by
+    Wt_cond x y < ⊤ ↔ ∃ p, produces compUniversal p y x := by
   constructor
   · intro h
     obtain ⟨n, hn, -⟩ := sInf_lt_iff.mp h
     obtain ⟨p, t, w, hrun, rfl⟩ := hn
-    exact ⟨p, (flaggedRuns_iff_produces p y x).mpr
-      ⟨t, (flaggedRuns_iff_flaggedRunsW p y x t).mpr ⟨w, hrun⟩⟩⟩
+    exact ⟨p, (compRuns_iff_produces p y x).mpr ⟨t, hrun.toCompRuns⟩⟩
   · rintro ⟨p, hprod⟩
-    obtain ⟨t, hF⟩ := (flaggedRuns_iff_produces p y x).mp hprod
-    obtain ⟨w, hw⟩ := (flaggedRuns_iff_flaggedRunsW p y x t).mp hF
-    exact lt_of_le_of_lt (Wt_cond_le_of_flaggedRunsW hw) (ENat.natCast_lt_top _)
+    obtain ⟨t, hC⟩ := (compRuns_iff_produces p y x).mp hprod
+    obtain ⟨w, hw⟩ := hC.exists_compRunsW
+    exact lt_of_le_of_lt (Wt_cond_le_of_compRunsW hw) (ENat.natCast_lt_top _)
 
 /-- **Writes never exceed transitions.** Every timed witness is a write witness of the
 same program with a smaller ledger, so `Wt_cond ≤ Kt_cond` with no overhead — both
@@ -206,12 +319,9 @@ from the work performed) cannot offer. -/
 theorem Wt_cond_le_Kt_cond (x y : BitString) : Wt_cond x y ≤ Kt_cond x y := by
   refine le_sInf ?_
   rintro n ⟨p, t, hrun, rfl⟩
-  obtain ⟨w, hw⟩ := (flaggedRuns_iff_flaggedRunsW p y x t).mp hrun
-  have hwt : w ≤ t := by
-    obtain ⟨b, q, t', -, hq, rfl⟩ := hw
-    have := hq.writes_le_time
-    omega
-  refine le_trans (Wt_cond_le_of_flaggedRunsW hw) ?_
+  obtain ⟨w, hw⟩ := hrun.exists_compRunsW
+  have hwt : w ≤ t := hw.writes_le_time
+  refine le_trans (Wt_cond_le_of_compRunsW hw) ?_
   exact Nat.cast_le.mpr (Nat.add_le_add_left (ceilLog2_mono hwt) _)
 
 /-- `Wt ≤ Kt` with no overhead. -/
@@ -219,29 +329,45 @@ theorem Wt_le_Kt (x : BitString) : Wt x ≤ Kt x :=
   Wt_cond_le_Kt_cond x []
 
 /-- **The conditioning theorem for the write measure**: `Wt(x | y) ≤ Wt(x)` with
-additive constant zero, by the same context flag as `Kt_cond_le_Kt`. -/
+additive constant zero, by the same root bit flip as `Kt_cond_le_Kt` — the write
+ledger is untouched by the flip. -/
 theorem Wt_cond_le_Wt (x y : BitString) : Wt_cond x y ≤ Wt x := by
   refine le_sInf ?_
   rintro n ⟨s, t, w, hrun, rfl⟩
-  obtain ⟨b, p, t', rfl, hw, rfl⟩ := hrun
-  have hctx : (bif b then [] else ([] : BitString)) = ([] : BitString) := by
-    cases b <;> rfl
-  rw [hctx] at hw
-  have hF : FlaggedRunsW (true :: p) y x (t' + 1) w := ⟨true, p, t', rfl, hw, rfl⟩
-  refine le_trans (Wt_cond_le_of_flaggedRunsW hF) ?_
-  refine Nat.cast_le.mpr ?_
-  simp [programLength]
+  cases hrun with
+  | embed hFW =>
+      obtain ⟨fb, q, t', heq, hU, rfl⟩ := hFW
+      have hctx : (bif fb then [] else ([] : BitString)) = ([] : BitString) := by
+        cases fb <;> rfl
+      rw [hctx] at hU
+      have hF' : FlaggedRunsW (true :: q) y x (t' + 1) w := ⟨true, q, t', rfl, hU, rfl⟩
+      have hC : CompRunsW (false :: true :: q) y x (t' + 1 + 1) w :=
+        CompRunsW.embed hF'
+      refine le_trans (Wt_cond_le_of_compRunsW hC) ?_
+      refine Nat.cast_le.mpr ?_
+      subst heq
+      simp [programLength]
+  | comp hp₂ hp₁ =>
+      have hctx : ∀ b : Bool, (bif b then [] else ([] : BitString)) = [] := by
+        intro b; cases b <;> rfl
+      rw [hctx] at hp₂
+      have hC := CompRunsW.comp (b := true) (z := y) hp₂ hp₁
+      refine le_trans (Wt_cond_le_of_compRunsW hC) ?_
+      refine Nat.cast_le.mpr ?_
+      simp [programLength]
 
-/-- **Transitions are linear in writes.** Each write witness bounds the
+/-- **Transitions are linear in writes.** Each flagged write witness bounds the
 transition-priced `Kt_cond` within an additive penalty logarithmic in the witness's
-description data. -/
+description data, plus the two-unit embed cost of the composing layer. -/
 theorem Kt_cond_le_of_flaggedRunsW {s y x : BitString} {t w : ℕ}
     (h : FlaggedRunsW s y x t w) :
     Kt_cond x y ≤ ((programLength s + ceilLog2 w +
-      ceilLog2 (programLength s + 2 * progSize (parsedCode s.tail) + 4) : ℕ) : ENat) := by
+      ceilLog2 (programLength s + 2 * progSize (parsedCode s.tail) + 4) + 2 : ℕ) :
+        ENat) := by
   obtain ⟨b, p, t', rfl, hw, rfl⟩ := h
   have hF : FlaggedRuns (b :: p) y x (t' + 1) :=
     ⟨b, p, t', rfl, (universalRuns_iff_universalRunsW _ _ _ _).mpr ⟨w, hw⟩, rfl⟩
+  have hC : CompRuns (false :: b :: p) y x (t' + 1 + 1) := CompRuns.embed hF
   have hw1 : 1 ≤ w := hw.one_le_writes
   have htle := hw.time_le
   have ht1 : t' + 1
@@ -257,16 +383,19 @@ theorem Kt_cond_le_of_flaggedRunsW {s y x : BitString} {t w : ℕ}
       ≤ ceilLog2 (programLength (b :: p) + 2 * progSize (parsedCode p) + 4)
         + ceilLog2 w :=
     le_trans (ceilLog2_mono ht1) (ceilLog2_mul_le _ _)
-  refine le_trans (Kt_cond_le_of_runs hF) ?_
+  have hlog2 : ceilLog2 (t' + 1 + 1) ≤ ceilLog2 (t' + 1) + 1 :=
+    ceilLog2_succ_le (by omega)
+  refine le_trans (Kt_cond_le_of_runs hC) ?_
   rw [show (b :: p).tail = p from rfl]
   refine Nat.cast_le.mpr ?_
+  simp only [programLength, List.length_cons] at hlog ⊢
   omega
 
 /-- **The length upper bound for `Wt`**: the projection code `Code.left` outputs its
 program with a single write, so `Wt_cond x y ≤ |x| + c` for the explicit constant
-`c = encode Code.left + 2`. -/
+`c = encode Code.left + 3`. -/
 theorem Wt_cond_le_length (x y : BitString) :
-    Wt_cond x y ≤ ((programLength x + (Encodable.encode Code.left + 2) : ℕ) : ENat) := by
+    Wt_cond x y ≤ ((programLength x + (Encodable.encode Code.left + 3) : ℕ) : ENat) := by
   have hrun : Run Code.left (Encodable.encode (x, y))
       [(Encodable.encode (x, y)).unpair.1] 1 := Run.left _
   have hlast : [(Encodable.encode (x, y)).unpair.1].getLast? =
@@ -289,10 +418,15 @@ theorem Wt_cond_le_length (x y : BitString) :
       (Encodable.encode Code.left + 1 + 1 + 1 + 1) 1 :=
     ⟨false, unaryPrefix (Encodable.encode Code.left) ++ x,
       Encodable.encode Code.left + 1 + 1 + 1, rfl, hW, rfl⟩
-  refine le_trans (Wt_cond_le_of_flaggedRunsW hFW) ?_
+  have hC : CompRunsW
+      (false :: false :: (unaryPrefix (Encodable.encode Code.left) ++ x)) y x
+      (Encodable.encode Code.left + 1 + 1 + 1 + 1 + 1) 1 :=
+    CompRunsW.embed hFW
+  refine le_trans (Wt_cond_le_of_compRunsW hC) ?_
   refine Nat.cast_le.mpr ?_
-  have hlen : programLength (false :: (unaryPrefix (Encodable.encode Code.left) ++ x))
-      = Encodable.encode Code.left + 2 + programLength x := by
+  have hlen : programLength
+      (false :: false :: (unaryPrefix (Encodable.encode Code.left) ++ x))
+      = Encodable.encode Code.left + 3 + programLength x := by
     simp [programLength, List.length_append, length_unaryPrefix]
     omega
   simp only [hlen, ceilLog2_one]
@@ -301,7 +435,7 @@ theorem Wt_cond_le_length (x y : BitString) :
 /-- The length upper bound for the plain `Wt`: `Wt_cond_le_length` at the empty
 context. -/
 theorem Wt_le_length (x : BitString) :
-    Wt x ≤ ((programLength x + (Encodable.encode Code.left + 2) : ℕ) : ENat) :=
+    Wt x ≤ ((programLength x + (Encodable.encode Code.left + 3) : ℕ) : ENat) :=
   Wt_cond_le_length x []
 
 end TimedKt
