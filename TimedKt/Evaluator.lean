@@ -399,11 +399,12 @@ theorem Kt_singleton_true_le : Kt [true] ≤ (8 : ENat) := by
     exact runBounded_left_pair 1 _ _
   have hb := Kt_le_of_runBounded h List.getLast?_singleton
   rw [Encodable.encodek, Option.getD_some] at hb
-  have h6 : ceilLog2 6 = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
   have harith : Encodable.encode Code.left + 2 + programLength ([true] : BitString)
       + ceilLog2 (Encodable.encode Code.left + 1 + 3) = 8 := by
-    show 2 + 2 + 1 + ceilLog2 6 = 8
-    rw [h6]
+    have he : Encodable.encode Code.left = 2 := rfl
+    have h6 : ceilLog2 (2 + 1 + 3) = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
+    rw [he, h6]
+    rfl
   rw [harith] at hb
   exact_mod_cast hb
 
@@ -419,15 +420,16 @@ theorem Kt_singleton_false_le : Kt [false] ≤ (6 : ENat) := by
   have hx : ((Encodable.decode
       (Nat.succ (Encodable.encode (([] : BitString), ([] : BitString))))
       : Option BitString)).getD [] = [false] := by
-    show ((Encodable.decode (Encodable.encode ([false] : BitString))
-      : Option BitString)).getD [] = [false]
-    rw [Encodable.encodek, Option.getD_some]
+    have he : Nat.succ (Encodable.encode (([] : BitString), ([] : BitString)))
+        = Encodable.encode ([false] : BitString) := rfl
+    rw [he, Encodable.encodek, Option.getD_some]
   rw [hx] at hb
-  have h5 : ceilLog2 5 = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
   have harith : Encodable.encode Code.succ + 2 + programLength ([] : BitString)
       + ceilLog2 (Encodable.encode Code.succ + 1 + 3) = 6 := by
-    show 1 + 2 + 0 + ceilLog2 5 = 6
-    rw [h5]
+    have he : Encodable.encode Code.succ = 1 := rfl
+    have h5 : ceilLog2 (1 + 1 + 3) = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
+    rw [he, h5]
+    rfl
   rw [harith] at hb
   exact_mod_cast hb
 
@@ -442,11 +444,12 @@ theorem Kt_cond_singleton_true_self_le : Kt_cond [true] [true] ≤ (8 : ENat) :=
     exact runBounded_right_pair 1 _ _
   have hb := Kt_cond_le_of_runBounded h List.getLast?_singleton
   rw [Encodable.encodek, Option.getD_some] at hb
-  have h7 : ceilLog2 7 = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
   have harith : Encodable.encode Code.right + 2 + programLength ([] : BitString)
       + ceilLog2 (Encodable.encode Code.right + 1 + 3) = 8 := by
-    show 3 + 2 + 0 + ceilLog2 7 = 8
-    rw [h7]
+    have he : Encodable.encode Code.right = 3 := rfl
+    have h7 : ceilLog2 (3 + 1 + 3) = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
+    rw [he, h7]
+    rfl
   rw [harith] at hb
   exact_mod_cast hb
 
