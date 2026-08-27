@@ -22,6 +22,12 @@ The composition lemmas (`ceilLog2_mul_le`, `ceilLog2_linear_le`) bound the price
 simulated run: a machine that runs in time `a * t + b` costs at most
 `ceilLog2 (a + b)` more than one that runs in time `t`. This is the arithmetic behind
 the additive constants of the invariance theorem.
+
+The additive lemmas (`ceilLog2_add_le`, `ceilLog2_two_mul_add_three_le`) price a run
+composed of two stages: the ceiling logarithm of a sum exceeds the sum of the ceiling
+logarithms by at most one bit, and the logarithm of a quantity already logarithmic in
+`n` collapses to `ceilLog2 n + O(1)`. This is the arithmetic behind the additive
+constants of the triangle inequality.
 -/
 
 namespace TimedKt
@@ -83,5 +89,29 @@ theorem ceilLog2_linear_le {t : ℕ} (a b : ℕ) (ht : 1 ≤ t) :
       _ = (a + b) * t := (Nat.add_mul a b t).symm
   calc ceilLog2 (a * t + b) ≤ ceilLog2 ((a + b) * t) := ceilLog2_mono h
     _ ≤ ceilLog2 (a + b) + ceilLog2 t := ceilLog2_mul_le _ _
+
+/-- The ceiling logarithm of a sum exceeds the sum of the ceiling logarithms by at
+most one bit: `a + b ≤ 2 ^ ceilLog2 a + 2 ^ ceilLog2 b ≤ 2 ^ (ceilLog2 a + ceilLog2 b + 1)`. -/
+theorem ceilLog2_add_le (a b : ℕ) :
+    ceilLog2 (a + b) ≤ ceilLog2 a + ceilLog2 b + 1 := by
+  refine ceilLog2_le_iff.mpr ?_
+  have ha := le_two_pow_ceilLog2 a
+  have hb := le_two_pow_ceilLog2 b
+  have h1 : 2 ^ ceilLog2 a ≤ 2 ^ (ceilLog2 a + ceilLog2 b) :=
+    Nat.pow_le_pow_right (by omega) (Nat.le_add_right _ _)
+  have h2 : 2 ^ ceilLog2 b ≤ 2 ^ (ceilLog2 a + ceilLog2 b) :=
+    Nat.pow_le_pow_right (by omega) (Nat.le_add_left _ _)
+  have h3 : 2 ^ (ceilLog2 a + ceilLog2 b + 1) = 2 ^ (ceilLog2 a + ceilLog2 b) * 2 :=
+    Nat.pow_succ ..
+  omega
+
+/-- The log-of-log collapse: a quantity linear in `m` has ceiling logarithm at most
+`m + 2`, so the logarithm of a term already logarithmic in `n` is `ceilLog2 n + O(1)`.
+This prices the self-delimiting length code of the triangle inequality. -/
+theorem ceilLog2_two_mul_add_three_le (m : ℕ) : ceilLog2 (2 * m + 3) ≤ m + 2 := by
+  refine ceilLog2_le_iff.mpr ?_
+  have h1 : m < 2 ^ m := Nat.lt_two_pow_self
+  have h2 : 2 ^ (m + 2) = 2 ^ m * 4 := by rw [Nat.pow_add]
+  omega
 
 end TimedKt

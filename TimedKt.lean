@@ -8,6 +8,7 @@ import TimedKt.Trace
 import TimedKt.Run
 import TimedKt.FuelCost
 import TimedKt.CeilLog2
+import TimedKt.Gamma
 import TimedKt.Timed
 import TimedKt.UniversalRun
 import TimedKt.Invariance
