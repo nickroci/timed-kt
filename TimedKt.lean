@@ -11,6 +11,7 @@ import TimedKt.CeilLog2
 import TimedKt.Gamma
 import TimedKt.Comp
 import TimedKt.CompPartrec
+import TimedKt.CompRun
 import TimedKt.Timed
 import TimedKt.UniversalRun
 import TimedKt.Invariance
