@@ -134,6 +134,18 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Conditioning for the probabilistic measure, `pKt(x\|y) ≤ pKt(x)` | LV (analogue of the deterministic conditioning) | the flag erases conditioning string and randomness together; the statement needs a randomness-preserving erase — a machine variant discarding `y` while keeping the tape — a further machine-design step | ❌ |
 | Coding theorem and average-case applications for the probabilistic measure | Oliveira19, GKLO22 | require probability-weighted enumeration and clocked self-simulation — the linear-overhead self-interpreter open item (see Invariance scope) | ➖ (out of scope) |
 
+## Certified evaluation
+
+| Result | Source | Lean | Status |
+|---|---|---|---|
+| Step-budgeted evaluator: exact trace and transition count under a budget, computable, budget-structural | — | `runBounded` (`Evaluator.lean`) | ✅ |
+| Soundness: an evaluator success is a `Run` derivation within budget | — | `runBounded_sound` | ✅ |
+| Completeness: every derivation is found at any sufficient budget; equivalence and budget-monotonicity | — | `runBounded_complete`, `runBounded_eq_some_iff`, `runBounded_mono` | ✅ |
+| Decidable bounded halting; exact `numSteps` from a success | — | `runBounded_isSome_iff`, `decidableRunWithin`, `numSteps_of_runBounded` | ✅ |
+| Certificate pipeline: evaluator success → flagged run → `Kt_cond` witness bound | — | `flaggedRuns_of_runBounded`, `Kt_cond_le_of_runBounded`, `Kt_le_of_runBounded` | ✅ |
+| Concrete certified bounds `Kt [true] ≤ 8`, `Kt [false] ≤ 6`, `Kt_cond [true] [true] ≤ 8` | — | `Kt_singleton_true_le`, `Kt_singleton_false_le`, `Kt_cond_singleton_true_self_le` | ✅ |
+| Machine floor `3 ≤ Kt_cond x y`; the first exact value `Kt_cond [] y = 3`, `Kt [] = 3` | — | `three_le_Kt_cond`, `three_le_Kt`, `Kt_cond_nil`, `Kt_nil` | ✅ |
+
 ## The fuel clock (the rejected alternative)
 
 | Result | Source | Lean | Status |
@@ -163,8 +175,11 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the
   universal machine by itself); equivalently, a fuel-free self-interpreter with a
   proved linear slowdown.
-- Exact `Kt` values for small concrete strings (`native_decide`-free evaluation
-  strategy needed).
+- Exact `Kt` values beyond the floor: the step-budgeted evaluator
+  (`Evaluator.lean`) now provides the `native_decide`-free evaluation route, and
+  `Kt [] = 3` is exact (machine floor + one-bit witness). Exact values for nonempty
+  strings need a finite enumeration of the programs and budgets between the floor
+  and the certified upper bounds (not started).
 - A `Kt`-rate/`K`-rate separation (the ❌ in the asymptotic layer): exhibiting a
   sequence of positive `Kt`-rate and zero `K`-rate needs an untimed `K`-rate layer
   and a depth construction; neither is started.
