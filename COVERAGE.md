@@ -129,18 +129,18 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Write-measure rate and its comparison to the time rate | — | `wtProfile`, `wtProfile_cast`, `wtRate`, `wtRate_le_ktRate` | ✅ |
 | A sequence of positive `Kt`-rate and zero `K`-rate (computational depth as a density) | — | not constructed; the layer provides only the bracketing theorems | ❌ |
 
-## The probabilistic layer
+## The randomized layer
 
 | Result | Source | Lean | Status |
 |---|---|---|---|
-| Random tapes (`Fin R → Bool`, `2 ^ R` of them), success within a time cutoff, success count, two-thirds majority — parameterized by how the tape enters the context | Oliveira19 (convention) | `card_randomTapes`, `SucceedsOn`, `successCountAt`, `successCount`, `HasMajorityAt`, `HasMajority` (`Probabilistic.lean`) | ✅ |
-| Monotonicity in the time bound (definitional from the `∃ t' ≤ t` cutoff) | — | `SucceedsOn.mono`, `successCountAt_mono`, `successCount_mono`, `HasMajorityAt.mono`, `HasMajority.mono` | ✅ |
-| The probabilistic measure, randomness as context; tape length minimized over but unpriced | Oliveira19, GKLO22 | `pKtAt`, `pKt`, `ctxJoin`, `pKt_cond` | ✅ |
-| Witness upper bound from any majority | — | `pKtAt_le_of_hasMajority` | ✅ |
-| **Zero-constant embeddings** `pKt(x) ≤ Kt(x)` and `pKt(x\|y) ≤ Kt(x)` — the context-erasing witness succeeds on every random tape | deterministic-to-probabilistic comparison, here with constant `0` | `pKt_le_Kt`, `pKt_cond_le_Kt`; general form `pKtAt_le_Kt`, via `exists_forall_succeedsOn_Kt`, `hasMajorityAt_of_forall_succeedsOn` | ✅ |
-| Positivity and everywhere-finiteness | — | `one_le_pKt`, `one_le_pKt_cond`, `pKt_lt_top`, `pKt_cond_lt_top`; general forms `one_le_pKtAt`, `HasMajorityAt.one_le_programLength` | ✅ |
-| Conditioning for the probabilistic measure, `pKt(x\|y) ≤ pKt(x)` | LV (analogue of the deterministic conditioning) | the erase bits discard conditioning string and randomness together; the statement needs a randomness-preserving erase — a machine variant discarding `y` while keeping the tape — a further machine-design step | ❌ |
-| Coding theorem and average-case applications for the probabilistic measure | Oliveira19, GKLO22 | require probability-weighted enumeration and clocked self-simulation — the linear-overhead self-interpreter open item (see Invariance scope) | ➖ (out of scope) |
+| Random tapes tied to the clock (`Fin t → Bool`, `2 ^ t` of them at time bound `t`), success within the cutoff, success count, two-thirds majority — parameterized by how the tape enters the context | Oliveira19 (style; differences stated in the measure row below) | `card_randomTapes`, `SucceedsOn`, `successCountAt`, `successCount`, `HasMajorityAt`, `HasMajority` (`Probabilistic.lean`) | ✅ |
+| Per-tape monotonicity in the time bound (definitional from the `∃ t' ≤ t` cutoff); no count-level analogue — the tape space varies with `t`, so the count/majority monotonicity conveniences of the earlier fixed-length-cutoff draft are removed | — | `SucceedsOn.mono` | ✅ |
+| The randomized measure, in the style of Oliveira's `rKt` (program fixed first, majority over random tapes, description and time priced, randomness free), with stated differences: machine-relative (no randomized invariance theorem); randomness as a context bitstring, not a separate random tape; tape length exactly the time bound `t`, not a separately minimized unpriced parameter. The GKLO `pKt` — description varying with the random string, a different quantifier order — is **not** formalized | Oliveira19 (style), GKLO22 (comparison only) | `rKtAt`, `rKt`, `ctxJoin`, `rKt_cond` | ✅ |
+| Witness upper bound from any majority | — | `rKtAt_le_of_hasMajority` | ✅ |
+| **Zero-constant embeddings** `rKt(x) ≤ Kt(x)` and `rKt(x\|y) ≤ Kt(x)` — the context-erasing witness succeeds on every random tape of its own time bound | deterministic-to-randomized comparison, here with constant `0` | `rKt_le_Kt`, `rKt_cond_le_Kt`; general form `rKtAt_le_Kt`, via `exists_forall_succeedsOn_Kt`, `hasMajorityAt_of_forall_succeedsOn` | ✅ |
+| Positivity and everywhere-finiteness | — | `one_le_rKt`, `one_le_rKt_cond`, `rKt_lt_top`, `rKt_cond_lt_top`; general forms `one_le_rKtAt`, `HasMajorityAt.one_le_programLength` | ✅ |
+| Conditioning for the randomized measure, `rKt(x\|y) ≤ rKt(x)` | LV (analogue of the deterministic conditioning) | the erase bits discard conditioning string and randomness together; the statement needs a randomness-preserving erase — a machine variant discarding `y` while keeping the tape — a further machine-design step | ❌ |
+| The GKLO `pKt` (description varying with the random string), the coding theorem, and the average-case applications | Oliveira19, GKLO22 | `pKt` is a different quantifier order from the fixed-program majority formalized here; the coding theorem and average-case theory require probability-weighted enumeration and clocked self-simulation — the linear-overhead self-interpreter open item (see Invariance scope) | ➖ (out of scope) |
 
 ## Certified evaluation
 
@@ -186,8 +186,8 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 - A `Kt`-rate/`K`-rate separation (the ❌ in the asymptotic layer): exhibiting a
   sequence of positive `Kt`-rate and zero `K`-rate needs an untimed `K`-rate layer
   and a depth construction; neither is started.
-- Conditioning for the probabilistic measure (the ❌ in the probabilistic layer):
-  `pKt(x|y) ≤ pKt(x)` needs a randomness-preserving context-erase convention — a
+- Conditioning for the randomized measure (the ❌ in the randomized layer):
+  `rKt(x|y) ≤ rKt(x)` needs a randomness-preserving context-erase convention — a
   machine variant that discards the conditioning string while keeping the random
   tape. The present erase bits discard the whole context, which is exactly what makes the
   deterministic embeddings zero-constant and is too coarse for this statement.

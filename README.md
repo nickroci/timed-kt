@@ -275,39 +275,51 @@ What is **not** claimed: any sequence separating the `Kt`-rate from the untimed
 computational depth as a density; the package proves the two bracketing theorems
 only.
 
-## The probabilistic layer
+## The randomized layer
 
-Probabilistic time-bounded complexity replaces the single program run by a majority
+Randomized time-bounded complexity replaces the single program run by a majority
 over random tapes. On a machine with a context slot the natural convention is to pass
 the randomness **as** a distinguished context, so no machine changes are needed:
-`TimedKt/Probabilistic.lean` counts, for each program and time bound, the length-`R`
-random tapes (functions `Fin R → Bool`, `2^R` of them, entering the machine as
-bitstrings) on which a clocked run produces `x` within the bound, and prices
+`TimedKt/Probabilistic.lean` counts, for each program and time bound `t`, the
+length-`t` random tapes (functions `Fin t → Bool`, `2^t` of them, entering the
+machine as bitstrings) on which a clocked run produces `x` within the bound, and
+prices
 
 ```
-pKt(x) = min { |p| + ⌈log₂ t⌉ : p produces x within t transitions on ≥ 2/3 of the tapes }
+rKt(x) = min { |p| + ⌈log₂ t⌉ : p produces x within t transitions on ≥ 2/3 of the length-t tapes }
 ```
 
-with the tape length minimized over but not priced — randomness is free, only
-description and time are priced, the convention of Oliveira's `rKt` (ICALP 2019) and
-the `pKt` of Goldberg, Kabanets, Lu, and Oliveira (CCC 2022). The conditional form
-needs no new machine either: `pKt_cond x y` passes the pair of the conditioning
-string and the tape as the context (`ctxJoin`).
+The measure is **in the style of Oliveira's `rKt`** (ICALP 2019) — the program is
+fixed first, the randomness varies, success probability is at least `2/3`,
+description and time are priced, randomness is free — with three deliberate
+differences: it is machine-relative (defined over this package's composing machine;
+no invariance theorem is proved for the randomized measure); the randomness is
+supplied as a context bitstring rather than a separate random tape read bit by bit;
+and the tape length is exactly `t`, the priced time bound — the `rKt` rationale that
+a `t`-step run consumes at most `t` random bits, built into the definition, so the
+amount of randomness is fixed by the clock rather than entering as a separately
+minimized, unpriced parameter. The `pKt` of Goldberg, Kabanets, Lu, and Oliveira
+(CCC 2022) — where the description may vary with the random string, a different
+quantifier order from the fixed-program majority — is **not** formalized here; both
+citations name the models being compared against, not the model implemented. The
+conditional form needs no new machine: `rKt_cond x y` passes the pair of the
+conditioning string and the tape as the context (`ctxJoin`).
 
-The deterministic embedding is exact (`pKt_le_Kt`, `pKt_cond_le_Kt`): an attained
+The deterministic embedding is exact (`rKt_le_Kt`, `rKt_cond_le_Kt`): an attained
 `Kt`-witness runs with empty context, so flipping the single erase bit at its root
 (the flagged context flag for an embed node, the comp erase bit for a composition
-node) erases whatever context it receives — it succeeds on **every** random tape, a
-majority of `2^R` out of `2^R`, with the same length and transition count. `Kt`
-therefore bounds both probabilistic measures with additive constant zero.
+node) erases whatever context it receives — it succeeds on **every** random tape of
+its own time bound, a majority of `2^t` out of `2^t`, with the same length and
+transition count. `Kt` therefore bounds both randomized measures with additive
+constant zero.
 
-What is **not** claimed: `pKt_cond x y ≤ pKt x` — conditioning for the probabilistic
+What is **not** claimed: `rKt_cond x y ≤ rKt x` — conditioning for the randomized
 measure. The machine's erase bits discard the whole context, conditioning string and
-randomness together, so a probabilistic witness that actually reads its tape cannot
+randomness together, so a randomized witness that actually reads its tape cannot
 be transported to the joined context; the statement needs a randomness-preserving
 erase (a machine variant that discards `y` while keeping the tape), a further
 machine-design step recorded as open. The coding theorem and the average-case theory
-of the probabilistic measures need probability-weighted enumeration and clocked
+of the randomized measures need probability-weighted enumeration and clocked
 self-simulation, deliberately out of scope (clocked self-simulation is the
 self-interpreter open item of the invariance scope above).
 
