@@ -22,6 +22,7 @@ THEOREMS=(
   TimedKt.fuel_exceeds_writes_unboundedly
   TimedKt.ktRate_le_one
   TimedKt.ktRate_eq_zero_of_witnesses
+  TimedKt.pKt_le_Kt
 )
 
 tmpdir="$(mktemp -d)"

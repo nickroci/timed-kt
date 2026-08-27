@@ -61,7 +61,15 @@ instances are `pKt` (the raw tape as context) and `pKt_cond` (the context `ctxJo
 * `SucceedsOn.mono`, `successCount_mono`, `HasMajority.mono` — monotonicity in the
   time bound, definitional from the cutoff;
 * `pKtAt_le_of_hasMajority` — the witness upper bound: any majority prices the
-  output.
+  output;
+* `pKt_le_Kt`, `pKt_cond_le_Kt` — **the zero-constant embeddings**: an attained
+  `Kt`-witness runs with empty context, so flipping its flag to `true` erases
+  whatever context it receives — it succeeds on *every* random tape, a majority of
+  `2 ^ R` out of `2 ^ R`, with the same length and transition count. The
+  deterministic measure therefore bounds the probabilistic one with additive
+  constant zero, plain and conditional alike;
+* `one_le_pKt`, `pKt_lt_top`, `pKt_cond_lt_top` — positivity (every majority witness
+  carries the context flag) and everywhere-finiteness (through the embeddings).
 -/
 
 open Kolmogorov
@@ -202,5 +210,122 @@ measure at the joined context — each random tape `ρ` enters the machine as
 `ctxJoin y ρ`. -/
 noncomputable def pKt_cond (x y : BitString) : ENat :=
   pKtAt (ctxJoin y) x
+
+/-! ### The zero-constant embeddings -/
+
+/-- A program that succeeds on every context has the full success count: all `2 ^ R`
+tapes succeed, whatever the context map feeds the machine. -/
+theorem successCountAt_eq_two_pow {p x : BitString} {t : ℕ}
+    (h : ∀ ρ, SucceedsOn p x t ρ) (ctx : BitString → BitString) (R : ℕ) :
+    successCountAt ctx p x t R = 2 ^ R := by
+  classical
+  unfold successCountAt
+  rw [Finset.filter_true_of_mem fun v _ => h (ctx (List.ofFn v)),
+    Finset.card_univ, card_randomTapes]
+
+/-- A program that succeeds on every context has the majority at every context map
+and every tape length: `2 ^ R` of `2 ^ R`. -/
+theorem hasMajorityAt_of_forall_succeedsOn {p x : BitString} {t : ℕ}
+    (h : ∀ ρ, SucceedsOn p x t ρ) (ctx : BitString → BitString) (R : ℕ) :
+    HasMajorityAt ctx p x t R := by
+  unfold HasMajorityAt
+  rw [successCountAt_eq_two_pow h]
+  exact Nat.mul_le_mul (by omega) le_rfl
+
+/-- **The context-erasing witness.** An attained `Kt`-witness has the form `b :: q`
+and runs with empty context; the flag-`true` program `true :: q` erases whatever
+context it receives, so it succeeds on *every* random tape — with the same length
+and the same transition count, hence at exactly the `Kt` price. -/
+theorem exists_forall_succeedsOn_Kt (x : BitString) :
+    ∃ p t, (∀ ρ, SucceedsOn p x t ρ) ∧
+      Kt x = ((programLength p + ceilLog2 t : ℕ) : ENat) := by
+  obtain ⟨p, t, hrun, heq⟩ :=
+    timedFlaggedUniversal.exists_runs_condKt (Kt_lt_top x)
+  have heq' : Kt x = ((programLength p + ceilLog2 t : ℕ) : ENat) := heq
+  have hF : FlaggedRuns p [] x t := hrun
+  obtain ⟨b, q, t', rfl, hrun', rfl⟩ := hF
+  have hctx : (bif b then [] else ([] : BitString)) = ([] : BitString) := by
+    cases b <;> rfl
+  rw [hctx] at hrun'
+  refine ⟨true :: q, t' + 1,
+    fun ρ => ⟨t' + 1, le_rfl, true, q, t', rfl, hrun', rfl⟩, ?_⟩
+  simpa only [programLength, List.length_cons] using heq'
+
+/-- **The zero-constant embedding, general form**: `pKtAt ctx x ≤ Kt x` for every
+context map. The context-erasing witness succeeds on every random tape, whatever the
+context map feeds it, so it has the majority at every tape length — at the `Kt`
+price. -/
+theorem pKtAt_le_Kt (ctx : BitString → BitString) (x : BitString) :
+    pKtAt ctx x ≤ Kt x := by
+  obtain ⟨p, t, hall, heq⟩ := exists_forall_succeedsOn_Kt x
+  rw [heq]
+  exact pKtAt_le_of_hasMajority (hasMajorityAt_of_forall_succeedsOn hall ctx 0)
+
+/-- **The deterministic embedding is exact**: `pKt x ≤ Kt x`, with additive constant
+zero. A deterministic witness is a probabilistic one — its erased context makes every
+random tape a success. -/
+theorem pKt_le_Kt (x : BitString) : pKt x ≤ Kt x :=
+  pKtAt_le_Kt id x
+
+/-- **The conditional embedding**: `pKt(x | y) ≤ Kt x`, with additive constant zero —
+the erased context makes the joined context `ctxJoin y ρ` irrelevant. -/
+theorem pKt_cond_le_Kt (x y : BitString) : pKt_cond x y ≤ Kt x :=
+  pKtAt_le_Kt (ctxJoin y) x
+
+/-! ### Positivity and finiteness -/
+
+/-- A majority forces at least one succeeding tape: with none, the count is `0` and
+`2 * 2 ^ R ≤ 0` is impossible. -/
+theorem HasMajorityAt.exists_succeedsOn {ctx : BitString → BitString}
+    {p x : BitString} {t R : ℕ} (h : HasMajorityAt ctx p x t R) :
+    ∃ v : Fin R → Bool, SucceedsOn p x t (ctx (List.ofFn v)) := by
+  classical
+  by_contra hno
+  have hno' : ∀ v : Fin R → Bool, ¬SucceedsOn p x t (ctx (List.ofFn v)) :=
+    fun v hv => hno ⟨v, hv⟩
+  have hzero : successCountAt ctx p x t R = 0 := by
+    unfold successCountAt
+    rw [Finset.filter_false_of_mem fun v _ => hno' v, Finset.card_empty]
+  have h' : 2 * 2 ^ R ≤ 3 * successCountAt ctx p x t R := h
+  rw [hzero, Nat.mul_zero] at h'
+  have hpos := Nat.two_pow_pos R
+  omega
+
+/-- Every majority witness program is nonempty: some tape actually runs it, and every
+run of the flagged machine reads a context flag. -/
+theorem HasMajorityAt.one_le_programLength {ctx : BitString → BitString}
+    {p x : BitString} {t R : ℕ} (h : HasMajorityAt ctx p x t R) :
+    1 ≤ programLength p := by
+  obtain ⟨v, t', -, b, q, t'', hpq, -, -⟩ := h.exists_succeedsOn
+  rw [hpq]
+  simp only [programLength, List.length_cons]
+  omega
+
+/-- **Positivity, general form**: `1 ≤ pKtAt ctx x` — every candidate cost carries at
+least the context flag. -/
+theorem one_le_pKtAt (ctx : BitString → BitString) (x : BitString) :
+    1 ≤ pKtAt ctx x := by
+  refine le_sInf fun n hn => ?_
+  obtain ⟨p, t, R, hmaj, rfl⟩ := hn
+  have h1 : 1 ≤ programLength p + ceilLog2 t :=
+    hmaj.one_le_programLength.trans (Nat.le_add_right _ _)
+  exact_mod_cast h1
+
+/-- **Positivity**: `1 ≤ pKt x`. -/
+theorem one_le_pKt (x : BitString) : 1 ≤ pKt x :=
+  one_le_pKtAt id x
+
+/-- Positivity for the conditional measure. -/
+theorem one_le_pKt_cond (x y : BitString) : 1 ≤ pKt_cond x y :=
+  one_le_pKtAt (ctxJoin y) x
+
+/-- The probabilistic measure is everywhere finite, through the embedding and the
+finiteness of `Kt`. -/
+theorem pKt_lt_top (x : BitString) : pKt x < ⊤ :=
+  (pKt_le_Kt x).trans_lt (Kt_lt_top x)
+
+/-- The conditional probabilistic measure is everywhere finite. -/
+theorem pKt_cond_lt_top (x y : BitString) : pKt_cond x y < ⊤ :=
+  (pKt_cond_le_Kt x y).trans_lt (Kt_lt_top x)
 
 end TimedKt
