@@ -35,6 +35,8 @@ makes the evaluator complete and not merely sound.
 * `Kt_singleton_true_le`, `Kt_singleton_false_le`, `Kt_cond_singleton_true_self_le`:
   concrete certified bounds `Kt [true] ≤ 8`, `Kt [false] ≤ 6`,
   `Kt_cond [true] [true] ≤ 8`.
+* `three_le_Kt_cond` and `Kt_cond_nil` / `Kt_nil`: the machine floor `3 ≤ Kt_cond`,
+  attained by the empty string — **the first exact value, `Kt [] = 3`**.
 -/
 
 open Nat.Partrec Kolmogorov
@@ -452,5 +454,79 @@ theorem Kt_cond_singleton_true_self_le : Kt_cond [true] [true] ≤ (8 : ENat) :=
     rfl
   rw [harith] at hb
   exact_mod_cast hb
+
+/-! ### Exactness: the machine floor and the first exact `Kt` value
+
+Every run of the flagged machine takes at least four transitions — the context flag,
+the prefix scan, at least one code transition, and the decode — on a program of at
+least one bit (the flag), so every witness value is at least `1 + ⌈log₂ 4⌉ = 3`. The
+empty string attains the floor: the one-bit program `[true]` erases the context, its
+empty tail parses to `Code.zero`, and the single write `0` decodes to `[]`. No
+enumeration is needed for the matching lower bound — the floor holds for every string
+at once. -/
+
+/-- Every clocked run of the flagged machine takes at least four transitions: the
+context flag, the prefix scan, at least one code transition, and the decode. -/
+theorem FlaggedRuns.four_le_time {s y x : BitString} {t : ℕ}
+    (h : FlaggedRuns s y x t) : 4 ≤ t := by
+  obtain ⟨b, p, t', -, hU, rfl⟩ := h
+  obtain ⟨code, T, steps, r, -, hrun, -, -, rfl⟩ := hU
+  have := hrun.one_le_steps
+  omega
+
+/-- Every program of the flagged machine carries at least the flag bit. -/
+theorem FlaggedRuns.one_le_length {s y x : BitString} {t : ℕ}
+    (h : FlaggedRuns s y x t) : 1 ≤ programLength s := by
+  obtain ⟨b, p, t', rfl, -, -⟩ := h
+  simp [programLength]
+
+/-- **The machine floor**: every conditional timed complexity is at least `3` — one
+program bit for the flag and `⌈log₂ 4⌉ = 2` bits for the four mandatory
+transitions. -/
+theorem three_le_Kt_cond (x y : BitString) : (3 : ENat) ≤ Kt_cond x y := by
+  refine le_sInf ?_
+  rintro n ⟨p, t, hrun, rfl⟩
+  have hp : 1 ≤ programLength p := FlaggedRuns.one_le_length hrun
+  have ht : 4 ≤ t := FlaggedRuns.four_le_time hrun
+  have hlog : 2 ≤ ceilLog2 t := by
+    have hmono : ceilLog2 4 ≤ ceilLog2 t := ceilLog2_mono ht
+    have h4 : ceilLog2 4 = 2 := ceilLog2_two_pow 2
+    omega
+  exact_mod_cast (by omega : 3 ≤ programLength p + ceilLog2 t)
+
+/-- The machine floor for the plain measure: `3 ≤ Kt x` for every string. -/
+theorem three_le_Kt (x : BitString) : (3 : ENat) ≤ Kt x :=
+  three_le_Kt_cond x []
+
+/-- The one-bit program `[true]`: the flag erases the context, the empty tail parses
+to prefix value `0` — that is, `Code.zero` — and the single write `0` decodes to the
+empty string. Four transitions in all. -/
+theorem flaggedRuns_nil_output (y : BitString) : FlaggedRuns [true] y [] 4 := by
+  refine ⟨true, [], 3, rfl, ?_, rfl⟩
+  refine ⟨Code.zero, [0], 1, 0, ?_, Run.zero _, rfl, ?_, rfl⟩
+  · have h0 : (List.takeWhile id ([] : BitString)).length
+        = Encodable.encode Code.zero := rfl
+    rw [h0, Encodable.encodek]
+  · have h0 : (0 : ℕ) = Encodable.encode ([] : BitString) := rfl
+    rw [h0, Encodable.encodek, Option.getD_some]
+
+/-- The empty string meets the floor at every context: `Kt_cond [] y ≤ 3`. -/
+theorem Kt_cond_nil_le (y : BitString) : Kt_cond [] y ≤ (3 : ENat) := by
+  have hb := Kt_cond_le_of_runs (flaggedRuns_nil_output y)
+  have harith : programLength ([true] : BitString) + ceilLog2 4 = 3 := by
+    have h4 : ceilLog2 4 = 2 := ceilLog2_two_pow 2
+    rw [h4]
+    rfl
+  rw [harith] at hb
+  exact_mod_cast hb
+
+/-- **The first exact `Kt` value**: the empty string attains the machine floor at
+every context, `Kt_cond [] y = 3`. -/
+theorem Kt_cond_nil (y : BitString) : Kt_cond [] y = 3 :=
+  le_antisymm (Kt_cond_nil_le y) (three_le_Kt_cond [] y)
+
+/-- `Kt [] = 3`: the exact timed complexity of the empty string. -/
+theorem Kt_nil : Kt [] = 3 :=
+  Kt_cond_nil []
 
 end TimedKt
