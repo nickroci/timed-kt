@@ -23,9 +23,13 @@ The **composing universal machine** `compUniversal` dispatches on the first tape
 * `compUniversal (true :: b :: gammaCode ℓ ++ p₁ ++ p₂, z)` with `|p₁| = ℓ` — a
   **composition node**: run `p₂` (recursively) on context `[]` or `z` as the erase
   bit `b` selects, obtaining `y`, then run `p₁` (recursively) on context `y`;
-* undefined (`Part.none`) on every other tape — the empty tape, a bare comp flag,
-  and any comp tape whose gamma parse fails (`gammaParse` is exact, so this is
-  every comp tape not of the displayed form).
+* undefined (`Part.none`) on every other tape, though the failure point varies: the
+  empty tape, a bare comp flag, and a comp tape whose gamma parse fails are rejected
+  at the dispatch, while a comp tape `true :: b :: gammaCode ℓ ++ rest` with `rest`
+  shorter than `ℓ` parses its length successfully (`gammaParse` reads only the
+  leading gamma code) and only becomes undefined downstream — its first recursive
+  stage runs on the empty tape `rest.drop ℓ = []`, which is outside the machine's
+  domain.
 
 The recursion is essential: composing only one level would price the outer program
 by a different measure than the one being defined, yielding a mixed statement

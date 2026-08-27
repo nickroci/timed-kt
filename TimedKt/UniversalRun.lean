@@ -11,9 +11,11 @@ import TimedKt.Timed
 # The Timed Universal Machine
 
 This module equips the `kolmogorov_complexity` library's `universalDecompressor` with a
-transition count, producing the timed decompressor `timedUniversal` — the unflagged
-layer beneath the public machine. The public `Kt` is defined over the flagged machine
-of `TimedKt.Flagged`, which adds a one-bit context flag on top of this module.
+transition count, producing the timed decompressor `timedUniversal` — the innermost,
+unflagged layer of the machine stack. The flagged machine of `TimedKt.Flagged` adds a
+one-bit context flag on top of this module, and the composing machine of
+`TimedKt.CompRun` builds on that in turn; the public `Kt` is defined over the last,
+in `TimedKt.Kt`.
 
 The library's universal decompressor parses its program tape `s` as a unary prefix
 (`i` ones followed by a zero) naming a `Nat.Partrec.Code`, and simulates that code on

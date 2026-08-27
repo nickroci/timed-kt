@@ -39,9 +39,11 @@ makes the evaluator complete and not merely sound.
 * `five_le_Kt_cond` and `Kt_cond_nil` / `Kt_nil`: the machine floor `5 ≤ Kt_cond`,
   attained by the empty string — **the first exact value, `Kt [] = 5`**.
 
-Concrete values are machine-relative: these are the composing-machine values (the
-flagged-machine numerals are two smaller — one comp-flag bit, one transition inside
-the logarithm).
+Concrete values are machine-relative: these are the composing-machine values. The
+embed bridge adds one program bit (the comp flag) and one transition, so a flagged
+certificate of value `|p| + ceilLog2 t` prices the composing measure at
+`|p| + 1 + ceilLog2 (t + 1)` — one larger when `ceilLog2 (t + 1) = ceilLog2 t`, two
+larger when the extra transition crosses a `ceilLog2` boundary.
 -/
 
 open Nat.Partrec Kolmogorov

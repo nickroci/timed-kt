@@ -9,10 +9,13 @@ import TimedKt.UniversalRun
 /-!
 # The Flagged Universal Machine
 
-The public `Kt` of this package is defined over a universal machine with one extra
+The **flagged universal machine** is the middle layer of this package's machine
+stack: it adds one convention on top of the unflagged universal machine of
+`TimedKt.UniversalRun`, and the public composing machine (`TimedKt.Comp`,
+`TimedKt.CompRun`) — the machine of the public `Kt` — builds on it in turn. The
 convention: the first program bit is a **context flag**. On program `b :: p`, the
-machine runs the timed universal machine of `TimedKt.UniversalRun` on `p`, with the
-context erased when `b = true` and passed through when `b = false`:
+machine runs the timed universal machine on `p`, with the context erased when
+`b = true` and passed through when `b = false`:
 
 * `flaggedUniversal (true :: p, y) = universalDecompressor (p, [])`
 * `flaggedUniversal (false :: p, y) = universalDecompressor (p, y)`
@@ -20,9 +23,10 @@ context erased when `b = true` and passed through when `b = false`:
 The flag costs one bit of description and one transition, and buys the conditioning
 theorem outright: a plain-complexity witness `b :: p` runs with empty context, so
 `true :: p` is a conditional witness for every context `y` — same length, same time.
-`Kt(x | y) ≤ Kt(x)` therefore holds with additive constant zero
-(`condKt_flagged_cond_le_plain`; the public statement is `Kt_cond_le_Kt` in
-`TimedKt.Kt`).
+`Kt(x | y) ≤ Kt(x)` therefore holds with additive constant zero at this layer
+(`condKt_flagged_cond_le_plain`). The composing machine inherits the mechanism —
+its root erase bit plays the same role (`condKt_comp_cond_le_plain`) — which is
+what gives the public statement `Kt_cond_le_Kt` in `TimedKt.Kt`.
 
 Choosing a universal machine with this closure property is the standard resolution:
 without the flag, erasing the context requires either wrapping the simulated code
@@ -105,7 +109,8 @@ theorem FlaggedRuns.unique {s y x₁ x₂ : BitString} {t₁ t₂ : ℕ}
   obtain ⟨rfl, rfl⟩ := hrun₁.unique hrun₂
   exact ⟨rfl, rfl⟩
 
-/-- The **timed flagged universal machine** — the machine of the public `Kt`. -/
+/-- The **timed flagged universal machine** — the timed middle layer, embedded
+behind the comp flag of the public composing machine (`TimedKt.CompRun`). -/
 def timedFlaggedUniversal : TimedDecompressor where
   toMap := flaggedUniversal
   Runs := FlaggedRuns
