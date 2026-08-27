@@ -36,6 +36,13 @@ the plain probabilistic measure; a map joining a conditioning string with the ta
 gives the conditional one. Decidability of success is classical, so the counts are
 noncomputable — they are measure ingredients, not algorithms.
 
+The measure `pKtAt ctx x` is the least `|p| + ceilLog2 t` over majorities at `ctx`,
+with the tape length `R` minimized over but **not priced**: randomness is free, only
+description and time are priced — the standard `rKt`/`pKt` convention. The public
+instances are `pKt` (the raw tape as context) and `pKt_cond` (the context `ctxJoin y
+ρ`, joining the conditioning string with the tape through the canonical enumeration
+`bitStringEnum`).
+
 ## Main definitions
 
 * `SucceedsOn p x t ρ` — some run of the flagged machine on context `ρ` produces `x`
@@ -43,14 +50,18 @@ noncomputable — they are measure ingredients, not algorithms.
 * `successCountAt ctx p x t R`, `successCount` — the number of succeeding length-`R`
   tapes, at a context map / at the identity;
 * `HasMajorityAt ctx p x t R`, `HasMajority` — success on at least two thirds of the
-  `2 ^ R` tapes.
+  `2 ^ R` tapes;
+* `pKtAt ctx x`, `pKt x`, `pKt_cond x y` — the probabilistic timed complexity at a
+  context map, at the identity, and at the joined context `ctxJoin y`.
 
 ## Main results
 
 * `card_randomTapes` — there are `2 ^ R` random tapes of length `R`;
 * `successCount_le` — the count never exceeds the number of tapes;
 * `SucceedsOn.mono`, `successCount_mono`, `HasMajority.mono` — monotonicity in the
-  time bound, definitional from the cutoff.
+  time bound, definitional from the cutoff;
+* `pKtAt_le_of_hasMajority` — the witness upper bound: any majority prices the
+  output.
 -/
 
 open Kolmogorov
@@ -153,5 +164,43 @@ theorem successCount_mono (p x : BitString) {t₁ t₂ : ℕ} (h : t₁ ≤ t₂
 theorem HasMajority.mono {p x : BitString} {t₁ t₂ : ℕ} (h : t₁ ≤ t₂) {R : ℕ}
     (hm : HasMajority p x t₁ R) : HasMajority p x t₂ R :=
   HasMajorityAt.mono h hm
+
+/-! ### The measure -/
+
+/-- The **probabilistic timed complexity at a context map**: the least
+`|p| + ceilLog2 t` over all programs `p`, time bounds `t`, and tape lengths `R` with
+a two-thirds majority at `ctx`, as an `ENat` infimum in the shape of `condKt`. The
+tape length `R` is minimized over but not priced: randomness is free, only
+description and time are priced — the standard convention of the probabilistic
+time-bounded measures. -/
+noncomputable def pKtAt (ctx : BitString → BitString) (x : BitString) : ENat :=
+  sInf {n | ∃ p t R, HasMajorityAt ctx p x t R ∧
+    ((programLength p + ceilLog2 t : ℕ) : ENat) = n}
+
+/-- The witness upper bound: any majority prices the output. -/
+theorem pKtAt_le_of_hasMajority {ctx : BitString → BitString} {p x : BitString}
+    {t R : ℕ} (h : HasMajorityAt ctx p x t R) :
+    pKtAt ctx x ≤ ((programLength p + ceilLog2 t : ℕ) : ENat) :=
+  sInf_le ⟨p, t, R, h, rfl⟩
+
+/-- **Probabilistic timed complexity** `pKt x`: the least `|p| + ceilLog2 t` over
+programs producing `x` within `t` transitions on at least two thirds of the random
+tapes of some length, the tape passed directly as the flagged machine's context. -/
+noncomputable def pKt (x : BitString) : ENat :=
+  pKtAt id x
+
+/-- The **joined context**: the canonical bitstring carrying the conditioning string
+`y` alongside the random tape `ρ` — the bitstring enumerated (by `bitStringEnum`) at
+the pairing of their encodings. Passing `ctxJoin y ρ` as the context gives the
+conditional probabilistic measure with no machine change: the machine's context slot
+carries both the conditioning data and the randomness. -/
+def ctxJoin (y ρ : BitString) : BitString :=
+  bitStringEnum (Nat.pair (Encodable.encode y) (Encodable.encode ρ))
+
+/-- **Conditional probabilistic timed complexity** `pKt(x | y)`: the probabilistic
+measure at the joined context — each random tape `ρ` enters the machine as
+`ctxJoin y ρ`. -/
+noncomputable def pKt_cond (x y : BitString) : ENat :=
+  pKtAt (ctxJoin y) x
 
 end TimedKt
