@@ -29,9 +29,15 @@ makes the evaluator complete and not merely sound.
 * `runBounded_isSome_iff` and the resulting `Decidable` instance: **bounded halting
   is decidable** — `∃ T s, Run c n T s ∧ s ≤ b` is decided by running `runBounded`.
 * `numSteps_of_runBounded`: a success computes `numSteps` exactly.
+* `Kt_cond_le_of_runBounded` / `Kt_le_of_runBounded`: **the certificate pipeline** —
+  an evaluator success on an encoded pair `(d, y)` prices the public `Kt_cond` of its
+  decoded output through the timed universal machine.
+* `Kt_singleton_true_le`, `Kt_singleton_false_le`, `Kt_cond_singleton_true_self_le`:
+  concrete certified bounds `Kt [true] ≤ 8`, `Kt [false] ≤ 6`,
+  `Kt_cond [true] [true] ≤ 8`.
 -/
 
-open Nat.Partrec
+open Nat.Partrec Kolmogorov
 
 namespace TimedKt
 
@@ -294,5 +300,154 @@ instance decidableRunWithin (b : ℕ) (c : Code) (n : ℕ) :
 theorem numSteps_of_runBounded {b : ℕ} {c : Code} {n : ℕ} {T : List ℕ} {s : ℕ}
     (h : runBounded b c n = some (T, s)) : numSteps c n = (s : ℕ∞) :=
   numSteps_eq_of_run (runBounded_sound h).1
+
+/-! ### Certificates: from an evaluator success to a public `Kt_cond` bound
+
+An evaluator success is a `Run` derivation (`runBounded_sound`), a `Run` on an
+encoded pair `(d, y)` is a clocked universal run on the tape
+`unaryPrefix (encode c) ++ d` (`universalRuns_of_run`), and a `false` context flag
+turns it into a run of the public flagged machine. `Kt_cond_le_of_runs` then prices
+the decoded output. The concrete certificates below evaluate every component on tiny
+instances by `rfl`/`simp`/kernel `decide`. -/
+
+/-- Compute `ceilLog2` at explicit positive targets: `ceilLog2 t = k + 1` exactly
+when `2 ^ k < t ≤ 2 ^ (k + 1)`. -/
+theorem ceilLog2_eq_succ_iff {t k : ℕ} :
+    ceilLog2 t = k + 1 ↔ 2 ^ k < t ∧ t ≤ 2 ^ (k + 1) := by
+  constructor
+  · intro h
+    refine ⟨?_, ceilLog2_le_iff.mp h.le⟩
+    by_contra hc
+    have := ceilLog2_le_iff.mpr (not_lt.mp hc)
+    omega
+  · rintro ⟨h1, h2⟩
+    have hle : ceilLog2 t ≤ k + 1 := ceilLog2_le_iff.mpr h2
+    have hgt : ¬ ceilLog2 t ≤ k := fun hc => absurd (ceilLog2_le_iff.mp hc) (not_le.mpr h1)
+    omega
+
+/-- The evaluator on the left projection at a paired input. -/
+private theorem runBounded_left_pair (b u v : ℕ) :
+    runBounded (b + 1) Code.left (Nat.pair u v) = some ([u], 1) := by
+  simp only [runBounded, Nat.unpair_pair]
+
+/-- The evaluator on the right projection at a paired input. -/
+private theorem runBounded_right_pair (b u v : ℕ) :
+    runBounded (b + 1) Code.right (Nat.pair u v) = some ([v], 1) := by
+  simp only [runBounded, Nat.unpair_pair]
+
+/-- The evaluator on the successor. -/
+private theorem runBounded_succ_eq (b n : ℕ) :
+    runBounded (b + 1) Code.succ n = some ([Nat.succ n], 1) := by
+  simp only [runBounded]
+
+/-- **Certificate packaging.** An evaluator success on the encoded pair `(d, y)`,
+whose trace ends in `r`, is a clocked run of the public flagged machine on the tape
+`false :: unaryPrefix (encode c) ++ d` with context `y`, producing the decoded
+output in `encode c + s + 3` transitions (prefix scan + code run + decode + flag). -/
+theorem flaggedRuns_of_runBounded {b : ℕ} {c : Code} {d y : BitString}
+    {T : List ℕ} {s r : ℕ}
+    (h : runBounded b c (Encodable.encode (d, y)) = some (T, s))
+    (hr : T.getLast? = some r) :
+    FlaggedRuns (false :: (unaryPrefix (Encodable.encode c) ++ d)) y
+      ((Encodable.decode r : Option BitString).getD [])
+      (Encodable.encode c + s + 3) := by
+  have hU := universalRuns_of_run (runBounded_sound h).1 hr
+  exact ⟨false, unaryPrefix (Encodable.encode c) ++ d,
+    Encodable.encode c + 1 + s + 1, rfl, hU, by omega⟩
+
+/-- **The certificate bound.** Every evaluator success on an encoded pair `(d, y)`
+prices the conditional timed complexity of its decoded output: program side
+`encode c + 2 + |d|` bits, time side `ceilLog2 (encode c + s + 3)` bits. -/
+theorem Kt_cond_le_of_runBounded {b : ℕ} {c : Code} {d y : BitString}
+    {T : List ℕ} {s r : ℕ}
+    (h : runBounded b c (Encodable.encode (d, y)) = some (T, s))
+    (hr : T.getLast? = some r) :
+    Kt_cond ((Encodable.decode r : Option BitString).getD []) y ≤
+      ((Encodable.encode c + 2 + programLength d
+        + ceilLog2 (Encodable.encode c + s + 3) : ℕ) : ENat) := by
+  refine le_trans (Kt_cond_le_of_runs (flaggedRuns_of_runBounded h hr)) ?_
+  refine Nat.cast_le.mpr ?_
+  have hlen : programLength (false :: (unaryPrefix (Encodable.encode c) ++ d))
+      = Encodable.encode c + 2 + programLength d := by
+    simp only [programLength, List.length_cons, List.length_append, length_unaryPrefix]
+    omega
+  omega
+
+/-- The certificate bound at the empty context prices the plain `Kt`. -/
+theorem Kt_le_of_runBounded {b : ℕ} {c : Code} {d : BitString} {T : List ℕ} {s r : ℕ}
+    (h : runBounded b c (Encodable.encode (d, ([] : BitString))) = some (T, s))
+    (hr : T.getLast? = some r) :
+    Kt ((Encodable.decode r : Option BitString).getD []) ≤
+      ((Encodable.encode c + 2 + programLength d
+        + ceilLog2 (Encodable.encode c + s + 3) : ℕ) : ENat) :=
+  Kt_cond_le_of_runBounded h hr
+
+/-! ### Concrete certificates
+
+Everything below is evaluated on tiny instances: the evaluator runs by `simp` on its
+equations, the encodings reduce by `rfl`/`decide`, and the resulting bounds are
+literal numerals. -/
+
+/-- **A concrete certificate: `Kt [true] ≤ 8`.** The left projection `Code.left`
+outputs its program tail `[true]`: tape `false :: unaryPrefix 2 ++ [true]` (5 bits),
+6 transitions, `⌈log₂ 6⌉ = 3`. -/
+theorem Kt_singleton_true_le : Kt [true] ≤ (8 : ENat) := by
+  have h : runBounded 2 Code.left
+      (Encodable.encode (([true] : BitString), ([] : BitString)))
+      = some ([Encodable.encode ([true] : BitString)], 1) := by
+    rw [Encodable.encode_prod_val]
+    exact runBounded_left_pair 1 _ _
+  have hb := Kt_le_of_runBounded h List.getLast?_singleton
+  rw [Encodable.encodek, Option.getD_some] at hb
+  have h6 : ceilLog2 6 = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
+  have harith : Encodable.encode Code.left + 2 + programLength ([true] : BitString)
+      + ceilLog2 (Encodable.encode Code.left + 1 + 3) = 8 := by
+    show 2 + 2 + 1 + ceilLog2 6 = 8
+    rw [h6]
+  rw [harith] at hb
+  exact_mod_cast hb
+
+/-- **A concrete certificate: `Kt [false] ≤ 6`.** The successor `Code.succ` on the
+empty tail maps the encoded pair `0` to `1 = encode [false]`: tape
+`false :: unaryPrefix 1` (3 bits), 5 transitions, `⌈log₂ 5⌉ = 3`. -/
+theorem Kt_singleton_false_le : Kt [false] ≤ (6 : ENat) := by
+  have h : runBounded 2 Code.succ
+      (Encodable.encode (([] : BitString), ([] : BitString)))
+      = some ([Nat.succ (Encodable.encode (([] : BitString), ([] : BitString)))], 1) :=
+    runBounded_succ_eq 1 _
+  have hb := Kt_le_of_runBounded h List.getLast?_singleton
+  have hx : ((Encodable.decode
+      (Nat.succ (Encodable.encode (([] : BitString), ([] : BitString))))
+      : Option BitString)).getD [] = [false] := by
+    show ((Encodable.decode (Encodable.encode ([false] : BitString))
+      : Option BitString)).getD [] = [false]
+    rw [Encodable.encodek, Option.getD_some]
+  rw [hx] at hb
+  have h5 : ceilLog2 5 = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
+  have harith : Encodable.encode Code.succ + 2 + programLength ([] : BitString)
+      + ceilLog2 (Encodable.encode Code.succ + 1 + 3) = 6 := by
+    show 1 + 2 + 0 + ceilLog2 5 = 6
+    rw [h5]
+  rw [harith] at hb
+  exact_mod_cast hb
+
+/-- **A concrete conditional certificate: `Kt_cond [true] [true] ≤ 8`.** The right
+projection `Code.right` reads the context through the `false` flag: tape
+`false :: unaryPrefix 3` (5 bits), 7 transitions, `⌈log₂ 7⌉ = 3`. -/
+theorem Kt_cond_singleton_true_self_le : Kt_cond [true] [true] ≤ (8 : ENat) := by
+  have h : runBounded 2 Code.right
+      (Encodable.encode (([] : BitString), ([true] : BitString)))
+      = some ([Encodable.encode ([true] : BitString)], 1) := by
+    rw [Encodable.encode_prod_val]
+    exact runBounded_right_pair 1 _ _
+  have hb := Kt_cond_le_of_runBounded h List.getLast?_singleton
+  rw [Encodable.encodek, Option.getD_some] at hb
+  have h7 : ceilLog2 7 = 3 := ceilLog2_eq_succ_iff.mpr (by decide)
+  have harith : Encodable.encode Code.right + 2 + programLength ([] : BitString)
+      + ceilLog2 (Encodable.encode Code.right + 1 + 3) = 8 := by
+    show 3 + 2 + 0 + ceilLog2 7 = 8
+    rw [h7]
+  rw [harith] at hb
+  exact_mod_cast hb
 
 end TimedKt
