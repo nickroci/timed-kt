@@ -1,0 +1,324 @@
+/-
+Copyright (c) 2026 Nicholas Holden. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Nicholas Holden
+-/
+import Mathlib.Topology.Instances.ENNReal.Lemmas
+import Mathlib.Topology.Order.LiminfLimsup
+import TimedKt.InfoTransfer
+
+/-!
+# The Asymptotic Layer: Complexity Rates of Infinite Sequences
+
+Single-instance `Kt` admits hardcoding: `Kt(x) ≤ |x| + O(1)` (`Kt_cond_le_length`), so
+per-instance optimality cannot separate computing an output from printing it, and for a
+one-bit output even the conditional complexity is `O(1)` outright. The standard
+resolution measures a whole output family at once: fix an infinite sequence
+`Z : ℕ → Bool` and track the complexity of its finite prefixes as a function of their
+length. The rate built here is the time-bounded sibling of the prefix-complexity
+densities of constructive dimension (J. H. Lutz, *Dimension in complexity classes*,
+SIAM J. Comput. 32(5), 2003; the Kolmogorov-complexity characterization of effective
+dimension is due to E. Mayordomo, Inf. Process. Lett. 84(1), 2002, and the `limsup`
+form used here corresponds to the strong dimension of Athreya, Hitchcock, Lutz, and
+Mayordomo, SIAM J. Comput. 37(3), 2007). Measuring a Boolean function through the
+complexity of its truth table is the meta-complexity convention (E. Allender,
+H. Buhrman, M. Koucký, D. van Melkebeek, D. Ronneburger, *Power from random strings*,
+SIAM J. Comput. 35(6), 2006).
+
+## Main definitions
+
+* `seqPrefix Z n` — the length-`n` prefix of `Z` as a bitstring;
+* `ktProfile Z n` — `Kt` of that prefix, landed in `ℕ` (grounded by `Kt_lt_top`);
+* `ktRate Z` — the limsup density `limsup_n (ktProfile Z n / n)` in `ℝ≥0∞`;
+* `truthTableSeq f`, `ttKtRate f` — the truth-table sequence and rate of a Boolean
+  function on bitstrings, through the canonical enumeration `bitStringEnum`;
+* `wtProfile`, `wtRate` — the same construction over the write measure `Wt`.
+
+## Main results
+
+* `ktProfile_le` / `ktRate_le_one` — **the hardcode ceiling**: the profile grows at
+  most linearly (`ktProfile Z n ≤ n + c`), so every sequence, however uncomputable,
+  has rate at most `1`.
+* `ktRate_eq_zero_of_witnesses` — **the generator collapse**: prefix witnesses with
+  vanishing description density and vanishing log-runtime density force the rate to
+  `0`; `ktRate_eq_zero_of_code` is the fixed-code form, whose unary-prefix constant
+  is absorbed by the density hypotheses.
+* `wtRate_le_ktRate` — the write rate is dominated by the time rate, from `Wt_le_Kt`.
+
+Between the ceiling and the collapse lies the layer's point: hardcoding is priced at
+the rate level, so separations invisible per instance become visible as densities. A
+sequence of positive `Kt`-rate and zero `K`-rate would exhibit computational depth as
+a density; no such separation is claimed here — this module provides the definitions
+and the two bracketing theorems.
+-/
+
+open Filter Kolmogorov Nat.Partrec Topology
+
+open scoped ENNReal
+
+namespace TimedKt
+
+/-! ### Prefixes of an infinite sequence -/
+
+/-- The length-`n` prefix of an infinite sequence `Z`, as a bitstring:
+`[Z 0, Z 1, …, Z (n-1)]`. -/
+def seqPrefix (Z : ℕ → Bool) (n : ℕ) : BitString :=
+  (List.range n).map Z
+
+@[simp] theorem seqPrefix_length (Z : ℕ → Bool) (n : ℕ) :
+    (seqPrefix Z n).length = n := by
+  simp [seqPrefix]
+
+/-- Longer prefixes extend shorter ones: `seqPrefix Z m` is a prefix of `seqPrefix Z n`
+whenever `m ≤ n`. -/
+theorem seqPrefix_prefix (Z : ℕ → Bool) {m n : ℕ} (h : m ≤ n) :
+    seqPrefix Z m <+: seqPrefix Z n := by
+  have heq : seqPrefix Z m = (seqPrefix Z n).take m := by
+    rw [seqPrefix, seqPrefix, ← List.map_take, List.take_range, min_eq_left h]
+  exact heq ▸ List.take_prefix m _
+
+/-! ### The complexity profile -/
+
+/-- The **complexity profile** of a sequence: `Kt` of its length-`n` prefix, as a
+natural number. The truncation is well-grounded: the public measure is everywhere
+finite (`Kt_lt_top`), and `ktProfile_cast` recovers the `ENat` value exactly. -/
+noncomputable def ktProfile (Z : ℕ → Bool) (n : ℕ) : ℕ :=
+  (Kt (seqPrefix Z n)).toNat
+
+/-- The profile carries the full `ENat` value of the measure: casting back loses
+nothing, by finiteness. -/
+theorem ktProfile_cast (Z : ℕ → Bool) (n : ℕ) :
+    (ktProfile Z n : ENat) = Kt (seqPrefix Z n) :=
+  ENat.natCast_toNat (Kt_lt_top _).ne
+
+/-- An `ENat` upper bound on `Kt` of a prefix transfers to the profile. -/
+theorem ktProfile_le_of_Kt_le {Z : ℕ → Bool} {n m : ℕ}
+    (h : Kt (seqPrefix Z n) ≤ (m : ENat)) : ktProfile Z n ≤ m := by
+  simpa [ktProfile] using ENat.toNat_le_toNat h (ENat.natCast_lt_top m).ne
+
+/-- **The hardcode ceiling.** The profile of every sequence grows at most linearly:
+`ktProfile Z n ≤ n + c` for a universal constant `c`, from the length upper bound
+`Kt_cond_le_length` — printing the prefix verbatim is always available. -/
+theorem ktProfile_le : ∃ c : ℕ, ∀ (Z : ℕ → Bool) (n : ℕ), ktProfile Z n ≤ n + c := by
+  obtain ⟨c, hc⟩ := Kt_cond_le_length
+  refine ⟨c, fun Z n => ktProfile_le_of_Kt_le ?_⟩
+  have h := hc (seqPrefix Z n) []
+  rw [Kt_cond_empty] at h
+  calc Kt (seqPrefix Z n)
+      ≤ (programLength (seqPrefix Z n) : ENat) + c := h
+    _ = ((n + c : ℕ) : ENat) := by simp
+
+/-! ### The complexity rate -/
+
+/-- The **complexity rate** of a sequence: the limsup density of the profile,
+`ktRate Z = limsup_n (ktProfile Z n / n)`, valued in `ℝ≥0∞`. The rate is the
+time-bounded sibling of the prefix-complexity densities of constructive dimension
+(the `limsup` form corresponds to the strong dimension of Athreya, Hitchcock, Lutz,
+and Mayordomo). -/
+noncomputable def ktRate (Z : ℕ → Bool) : ℝ≥0∞ :=
+  atTop.limsup fun n => (ktProfile Z n : ℝ≥0∞) / n
+
+/-- A constant over `n` tends to zero: `c / n → 0` in `ℝ≥0∞` along `atTop`. -/
+theorem tendsto_natCast_div_atTop_nhds_zero (c : ℕ) :
+    Tendsto (fun n : ℕ => (c : ℝ≥0∞) / n) atTop (𝓝 0) := by
+  simpa [div_eq_mul_inv] using
+    ENNReal.Tendsto.const_mul ENNReal.tendsto_inv_nat_nhds_zero
+      (Or.inr (ENNReal.natCast_ne_top c))
+
+/-- **The hardcode ceiling at the rate level**: `ktRate Z ≤ 1` for every sequence.
+Eventually `ktProfile Z n / n ≤ 1 + c / n`, and the right-hand side converges to `1`,
+so the limsup is at most `1`. Printing pins every sequence, however uncomputable, at
+rate at most one. -/
+theorem ktRate_le_one (Z : ℕ → Bool) : ktRate Z ≤ 1 := by
+  obtain ⟨c, hc⟩ := ktProfile_le
+  have hev : ∀ᶠ n : ℕ in atTop,
+      (ktProfile Z n : ℝ≥0∞) / n ≤ 1 + (c : ℝ≥0∞) / n := by
+    filter_upwards [eventually_ge_atTop 1] with n hn
+    have hn0 : (n : ℝ≥0∞) ≠ 0 := Nat.cast_ne_zero.mpr (by omega)
+    calc (ktProfile Z n : ℝ≥0∞) / n
+        ≤ ((n + c : ℕ) : ℝ≥0∞) / n :=
+          ENNReal.div_le_div_right (Nat.cast_le.mpr (hc Z n)) n
+      _ = (n : ℝ≥0∞) / n + (c : ℝ≥0∞) / n := by
+          rw [Nat.cast_add, ENNReal.add_div]
+      _ = 1 + (c : ℝ≥0∞) / n := by
+          rw [ENNReal.div_self hn0 (ENNReal.natCast_ne_top n)]
+  have hlim : Tendsto (fun n : ℕ => 1 + (c : ℝ≥0∞) / n) atTop (𝓝 1) := by
+    simpa using tendsto_const_nhds.add (tendsto_natCast_div_atTop_nhds_zero c)
+  calc ktRate Z
+      ≤ atTop.limsup fun n : ℕ => 1 + (c : ℝ≥0∞) / n := limsup_le_limsup hev
+    _ = 1 := hlim.limsup_eq
+
+/-! ### Density helpers
+
+Additive constants — such as the comp flag and the extra transition of the public
+machine's embed node, or a fixed code's unary prefix — are invisible to vanishing
+densities. -/
+
+/-- Additive constants are invisible to vanishing densities: if `u n / n → 0` then
+`(u n + k) / n → 0`. -/
+theorem tendsto_add_const_div_atTop_nhds_zero {u : ℕ → ℕ} (k : ℕ)
+    (hu : Tendsto (fun n => (u n : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    Tendsto (fun n => ((u n + k : ℕ) : ℝ≥0∞) / n) atTop (𝓝 0) := by
+  simpa [Nat.cast_add, ENNReal.add_div]
+    using hu.add (tendsto_natCast_div_atTop_nhds_zero k)
+
+/-- The log-runtime density survives an additive constant on the runtime:
+if `ceilLog2 (S n) / n → 0` then `ceilLog2 (S n + k) / n → 0`, through the one-bit
+subadditivity `ceilLog2_add_le`. -/
+theorem tendsto_ceilLog2_add_const_div_atTop_nhds_zero {S : ℕ → ℕ} (k : ℕ)
+    (hS : Tendsto (fun n => (ceilLog2 (S n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    Tendsto (fun n => (ceilLog2 (S n + k) : ℝ≥0∞) / n) atTop (𝓝 0) := by
+  have hlim := tendsto_add_const_div_atTop_nhds_zero (ceilLog2 k + 1) hS
+  exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hlim
+    (fun _ => zero_le)
+    (fun n => ENNReal.div_le_div_right (Nat.cast_le.mpr (ceilLog2_add_le _ _)) n)
+
+/-! ### The generator collapse -/
+
+/-- **The generator collapse.** If every prefix of `Z` is produced by some run of the
+flagged machine with program length at most `g n` and transition count at most `T n`,
+and both densities `g n / n` and `ceilLog2 (T n) / n` vanish — sublinear description
+and subexponential time — then `ktRate Z = 0`. The flagged witnesses reach the public
+measure through the embed bridge (`Kt_cond_le_of_flaggedRuns`); its one-bit,
+one-transition overhead is absorbed by the density hypotheses. Hardcoding pins the
+rate at the ceiling `1` (`ktRate_le_one`); a uniform generator collapses it to `0`,
+so algorithms are visible at the rate level even though every single prefix admits
+the printing bound. -/
+theorem ktRate_eq_zero_of_witnesses {Z : ℕ → Bool} {g T : ℕ → ℕ}
+    (h : ∀ n, ∃ p t, FlaggedRuns p [] (seqPrefix Z n) t ∧
+      programLength p ≤ g n ∧ t ≤ T n)
+    (hg : Tendsto (fun n => (g n : ℝ≥0∞) / n) atTop (𝓝 0))
+    (hT : Tendsto (fun n => (ceilLog2 (T n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    ktRate Z = 0 := by
+  have hbound : ∀ n, ktProfile Z n ≤ (g n + 1) + ceilLog2 (T n + 1) := by
+    intro n
+    obtain ⟨p, t, hrun, hp, ht⟩ := h n
+    refine ktProfile_le_of_Kt_le ?_
+    calc Kt (seqPrefix Z n)
+        = Kt_cond (seqPrefix Z n) [] := (Kt_cond_empty _).symm
+      _ ≤ ((programLength p + 1 + ceilLog2 (t + 1) : ℕ) : ENat) :=
+          Kt_cond_le_of_flaggedRuns hrun
+      _ ≤ (((g n + 1) + ceilLog2 (T n + 1) : ℕ) : ENat) :=
+          Nat.cast_le.mpr
+            (Nat.add_le_add (by omega) (ceilLog2_mono (by omega)))
+  have hle : ∀ n : ℕ, (ktProfile Z n : ℝ≥0∞) / n ≤
+      ((g n + 1 : ℕ) : ℝ≥0∞) / n + (ceilLog2 (T n + 1) : ℝ≥0∞) / n := by
+    intro n
+    calc (ktProfile Z n : ℝ≥0∞) / n
+        ≤ (((g n + 1) + ceilLog2 (T n + 1) : ℕ) : ℝ≥0∞) / n :=
+          ENNReal.div_le_div_right (Nat.cast_le.mpr (hbound n)) n
+      _ = ((g n + 1 : ℕ) : ℝ≥0∞) / n + (ceilLog2 (T n + 1) : ℝ≥0∞) / n := by
+          rw [Nat.cast_add, ENNReal.add_div]
+  have hlim : Tendsto (fun n => (ktProfile Z n : ℝ≥0∞) / n) atTop (𝓝 0) := by
+    have hg' := tendsto_add_const_div_atTop_nhds_zero 1 hg
+    have hT' := tendsto_ceilLog2_add_const_div_atTop_nhds_zero 1 hT
+    have hsum := hg'.add hT'
+    rw [add_zero] at hsum
+    exact tendsto_of_tendsto_of_tendsto_of_le_of_le tendsto_const_nhds hsum
+      (fun _ => zero_le) hle
+  exact hlim.limsup_eq
+
+/-! ### The fixed-code form
+
+A generator is most naturally given as a single `Nat.Partrec.Code` fed a family of
+input tapes. The corollary `ktRate_eq_zero_of_code` packages such a family into the
+witness form: the code enters the program through its unary prefix, a constant
+contribution absorbed by the vanishing-density hypotheses. -/
+
+/-- **The fixed-code generator collapse.** Suppose one code `c` generates every prefix
+of `Z`: on the input tape `d n` (with empty context), of length at most `g n`, the code
+runs to a value decoding to `seqPrefix Z n` within `S n` transitions. If the densities
+`g n / n` and `ceilLog2 (S n) / n` vanish, then `ktRate Z = 0`. The witness program is
+`false :: unaryPrefix (encode c) ++ d n`; the unary prefix contributes the constant
+`encode c + 1` to the description, absorbed by the density hypotheses. -/
+theorem ktRate_eq_zero_of_code {Z : ℕ → Bool} {c : Code}
+    {d : ℕ → BitString} {g S : ℕ → ℕ}
+    (hlen : ∀ n, programLength (d n) ≤ g n)
+    (h : ∀ n, ∃ (T : List ℕ) (steps r : ℕ),
+      Run c (Encodable.encode (d n, ([] : BitString))) T steps ∧
+      T.getLast? = some r ∧
+      (Encodable.decode r : Option BitString).getD [] = seqPrefix Z n ∧
+      steps ≤ S n)
+    (hg : Tendsto (fun n => (g n : ℝ≥0∞) / n) atTop (𝓝 0))
+    (hS : Tendsto (fun n => (ceilLog2 (S n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    ktRate Z = 0 := by
+  refine ktRate_eq_zero_of_witnesses
+    (g := fun n => g n + (Encodable.encode c + 2))
+    (T := fun n => S n + (Encodable.encode c + 3)) (fun n => ?_)
+    (tendsto_add_const_div_atTop_nhds_zero _ hg)
+    (tendsto_ceilLog2_add_const_div_atTop_nhds_zero _ hS)
+  obtain ⟨T, steps, r, hrun, hlast, hdec, hsteps⟩ := h n
+  have hu := universalRuns_of_run hrun hlast
+  rw [hdec] at hu
+  refine ⟨false :: (unaryPrefix (Encodable.encode c) ++ d n),
+    Encodable.encode c + 1 + steps + 1 + 1,
+    ⟨false, _, _, rfl, hu, rfl⟩, ?_, ?_⟩
+  · have hdn : (d n).length ≤ g n := hlen n
+    simp only [programLength, List.length_cons, List.length_append, length_unaryPrefix]
+    omega
+  · omega
+
+/-! ### Truth tables of Boolean functions -/
+
+/-- The canonical enumeration of bitstrings: the bijection `ℕ ≃ BitString` obtained
+from the encodability and infinitude of `List Bool`
+(`Denumerable.ofEncodableOfInfinite`), listing bitstrings in increasing order of their
+`Encodable.encode` value. -/
+def bitStringEnum : ℕ ≃ BitString :=
+  letI : Denumerable (List Bool) := Denumerable.ofEncodableOfInfinite (List Bool)
+  (Denumerable.eqv (List Bool)).symm
+
+/-- The **truth-table sequence** of a Boolean function on bitstrings: bit `i` is the
+value of `f` at the `i`-th bitstring of the canonical enumeration. Measuring a function
+family through the complexity of its truth table is the meta-complexity convention. -/
+def truthTableSeq (f : BitString → Bool) : ℕ → Bool :=
+  fun i => f (bitStringEnum i)
+
+/-- The **truth-table complexity rate** of a Boolean function: the `Kt`-rate of its
+truth-table sequence. -/
+noncomputable def ttKtRate (f : BitString → Bool) : ℝ≥0∞ :=
+  ktRate (truthTableSeq f)
+
+/-- The hardcode ceiling for truth tables: `ttKtRate f ≤ 1` for every function. -/
+theorem ttKtRate_le_one (f : BitString → Bool) : ttKtRate f ≤ 1 :=
+  ktRate_le_one (truthTableSeq f)
+
+/-- The generator collapse for truth tables: runs producing the truth-table prefixes
+with vanishing description and log-runtime densities force `ttKtRate f = 0`. -/
+theorem ttKtRate_eq_zero_of_witnesses {f : BitString → Bool} {g T : ℕ → ℕ}
+    (h : ∀ n, ∃ p t, FlaggedRuns p [] (seqPrefix (truthTableSeq f) n) t ∧
+      programLength p ≤ g n ∧ t ≤ T n)
+    (hg : Tendsto (fun n => (g n : ℝ≥0∞) / n) atTop (𝓝 0))
+    (hT : Tendsto (fun n => (ceilLog2 (T n) : ℝ≥0∞) / n) atTop (𝓝 0)) :
+    ttKtRate f = 0 :=
+  ktRate_eq_zero_of_witnesses h hg hT
+
+/-! ### The write-measure analogue -/
+
+/-- The write-measure profile: `Wt` of the length-`n` prefix, as a natural number —
+grounded by `Wt_lt_top`. -/
+noncomputable def wtProfile (Z : ℕ → Bool) (n : ℕ) : ℕ :=
+  (Wt (seqPrefix Z n)).toNat
+
+/-- The write profile carries the full `ENat` value of the write measure. -/
+theorem wtProfile_cast (Z : ℕ → Bool) (n : ℕ) :
+    (wtProfile Z n : ENat) = Wt (seqPrefix Z n) :=
+  ENat.natCast_toNat (Wt_lt_top _).ne
+
+/-- The **write-measure rate**: the limsup density of the write profile. -/
+noncomputable def wtRate (Z : ℕ → Bool) : ℝ≥0∞ :=
+  atTop.limsup fun n => (wtProfile Z n : ℝ≥0∞) / n
+
+/-- The write profile never exceeds the time profile: pointwise from `Wt_le_Kt`,
+transported through `toNat` by finiteness. -/
+theorem wtProfile_le_ktProfile (Z : ℕ → Bool) (n : ℕ) :
+    wtProfile Z n ≤ ktProfile Z n :=
+  ENat.toNat_le_toNat (Wt_le_Kt _) (Kt_lt_top _).ne
+
+/-- Rate comparison: `wtRate Z ≤ ktRate Z` — the limsup of a pointwise-dominated
+density is dominated. -/
+theorem wtRate_le_ktRate (Z : ℕ → Bool) : wtRate Z ≤ ktRate Z :=
+  limsup_le_limsup (Eventually.of_forall fun n =>
+    ENNReal.div_le_div_right (Nat.cast_le.mpr (wtProfile_le_ktProfile Z n)) n)
+
+end TimedKt

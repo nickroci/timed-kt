@@ -17,6 +17,26 @@ Sources:
   [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
   library, pinned at commit `f11c8f01` (see `lake-manifest.json`): the untimed layer
   this package builds on.
+- **Lutz03** — J. H. Lutz, *Dimension in complexity classes*, SIAM J. Comput.
+  32(5):1236–1259, 2003: resource-bounded (constructive/effective) dimension. The
+  Kolmogorov-complexity characterization of constructive dimension as
+  `liminf K(Z↾n)/n` is E. Mayordomo, *A Kolmogorov complexity characterization of
+  constructive Hausdorff dimension*, Inf. Process. Lett. 84(1):1–3, 2002; the
+  `limsup` form corresponds to the strong dimension of K. B. Athreya,
+  J. M. Hitchcock, J. H. Lutz, and E. Mayordomo, *Effective strong dimension in
+  algorithmic information and computational complexity*, SIAM J. Comput.
+  37(3):671–705, 2007.
+- **ABKMR** — E. Allender, H. Buhrman, M. Koucký, D. van Melkebeek,
+  D. Ronneburger, *Power from random strings*, SIAM J. Comput. 35(6):1467–1493,
+  2006: measuring a function family through the complexity of its truth table.
+- **Oliveira19** — I. C. Oliveira, *Randomness and intractability in Kolmogorov
+  complexity*, ICALP 2019, LIPIcs 132, 32:1–32:14: the randomized time-bounded
+  measure `rKt` — success probability at least `2/3`, description and time priced,
+  randomness free.
+- **GKLO22** — H. Goldberg, V. Kabanets, Z. Lu, I. C. Oliveira, *Probabilistic
+  Kolmogorov complexity with applications to average-case complexity*, CCC 2022,
+  LIPIcs 234, 16:1–16:60: probabilistic Kolmogorov measures (`pK`, `pKt`) and their
+  average-case theory.
 
 Rows with source "—" are constructions of this package (the operational ledgers, the
 fuel comparison layer, and the write/bit-priced measures) rather than formalizations
@@ -95,6 +115,45 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Bit-priced (`traceBits`) complexity measure: `Bt_cond`, `Bt`; ledger forgetting; uniqueness of `(x, t, b)`; witness bound; `K ≤ Bt`; finiteness ↔ producibility; conditioning constant `0` | — | `UniversalRunsB`, `FlaggedRunsB`, `CompRunsB`, `Bt_cond`, `Bt`, `Bt_cond_le_of_compRunsB`, `K_cond_le_Bt_cond`, `Bt_cond_lt_top_iff`, `Bt_cond_le_Bt` (`BitCost.lean`) | ✅ |
 | Comparison of `Bt` with `Wt` or `Kt` (either direction) | — | per-run ledger domination fails both ways (unbounded `Nat.size` up, `Nat.size 0 = 0` down); no measure-level route proved | ❌ |
 
+## The asymptotic layer
+
+| Result | Source | Lean | Status |
+|---|---|---|---|
+| Sequence prefixes with length and prefix-monotonicity | — | `seqPrefix`, `seqPrefix_length`, `seqPrefix_prefix` (`Asymptotic.lean`) | ✅ |
+| The `ℕ`-valued profile `Kt(Z↾n)`, grounded by finiteness, with the `ENat` bridge | — | `ktProfile`, `ktProfile_cast` | ✅ |
+| Hardcode ceiling at the profile: `ktProfile Z n ≤ n + c` | LV (length upper bound) | `ktProfile_le` | ✅ |
+| The rate `limsup Kt(Z↾n)/n` in `ℝ≥0∞` | Lutz03 (constructive dimension), time-bounded analogue | `ktRate` | ✅ |
+| Rate ceiling: `ktRate Z ≤ 1` for every sequence | Lutz03, time-bounded analogue of the dimension ceiling | `ktRate_le_one` | ✅ |
+| Generator collapse: vanishing description and log-runtime densities force rate `0` | — | `ktRate_eq_zero_of_witnesses`; fixed-code form `ktRate_eq_zero_of_code` | ✅ |
+| Truth-table framing: canonical enumeration, truth-table sequence and rate | ABKMR (meta-complexity convention) | `bitStringEnum`, `truthTableSeq`, `ttKtRate`, `ttKtRate_le_one`, `ttKtRate_eq_zero_of_witnesses` | ✅ |
+| Write-measure rate and its comparison to the time rate | — | `wtProfile`, `wtProfile_cast`, `wtRate`, `wtRate_le_ktRate` | ✅ |
+| A sequence of positive `Kt`-rate and zero `K`-rate (computational depth as a density) | — | not constructed; the layer provides only the bracketing theorems | ❌ |
+
+## The probabilistic layer
+
+| Result | Source | Lean | Status |
+|---|---|---|---|
+| Random tapes (`Fin R → Bool`, `2 ^ R` of them), success within a time cutoff, success count, two-thirds majority — parameterized by how the tape enters the context | Oliveira19 (convention) | `card_randomTapes`, `SucceedsOn`, `successCountAt`, `successCount`, `HasMajorityAt`, `HasMajority` (`Probabilistic.lean`) | ✅ |
+| Monotonicity in the time bound (definitional from the `∃ t' ≤ t` cutoff) | — | `SucceedsOn.mono`, `successCountAt_mono`, `successCount_mono`, `HasMajorityAt.mono`, `HasMajority.mono` | ✅ |
+| The probabilistic measure, randomness as context; tape length minimized over but unpriced | Oliveira19, GKLO22 | `pKtAt`, `pKt`, `ctxJoin`, `pKt_cond` | ✅ |
+| Witness upper bound from any majority | — | `pKtAt_le_of_hasMajority` | ✅ |
+| **Zero-constant embeddings** `pKt(x) ≤ Kt(x)` and `pKt(x\|y) ≤ Kt(x)` — the context-erasing witness succeeds on every random tape | deterministic-to-probabilistic comparison, here with constant `0` | `pKt_le_Kt`, `pKt_cond_le_Kt`; general form `pKtAt_le_Kt`, via `exists_forall_succeedsOn_Kt`, `hasMajorityAt_of_forall_succeedsOn` | ✅ |
+| Positivity and everywhere-finiteness | — | `one_le_pKt`, `one_le_pKt_cond`, `pKt_lt_top`, `pKt_cond_lt_top`; general forms `one_le_pKtAt`, `HasMajorityAt.one_le_programLength` | ✅ |
+| Conditioning for the probabilistic measure, `pKt(x\|y) ≤ pKt(x)` | LV (analogue of the deterministic conditioning) | the erase bits discard conditioning string and randomness together; the statement needs a randomness-preserving erase — a machine variant discarding `y` while keeping the tape — a further machine-design step | ❌ |
+| Coding theorem and average-case applications for the probabilistic measure | Oliveira19, GKLO22 | require probability-weighted enumeration and clocked self-simulation — the linear-overhead self-interpreter open item (see Invariance scope) | ➖ (out of scope) |
+
+## Certified evaluation
+
+| Result | Source | Lean | Status |
+|---|---|---|---|
+| Step-budgeted evaluator: exact trace and transition count under a budget, computable, budget-structural | — | `runBounded` (`Evaluator.lean`) | ✅ |
+| Soundness: an evaluator success is a `Run` derivation within budget | — | `runBounded_sound` | ✅ |
+| Completeness: every derivation is found at any sufficient budget; equivalence and budget-monotonicity | — | `runBounded_complete`, `runBounded_eq_some_iff`, `runBounded_mono` | ✅ |
+| Decidable bounded halting; exact `numSteps` from a success | — | `runBounded_isSome_iff`, `decidableRunWithin`, `numSteps_of_runBounded` | ✅ |
+| Certificate pipeline: evaluator success → flagged run → embed bridge → `Kt_cond` witness bound | — | `flaggedRuns_of_runBounded`, `Kt_cond_le_of_flaggedRuns` (`Kt.lean`), `Kt_cond_le_of_runBounded`, `Kt_le_of_runBounded` | ✅ |
+| Concrete certified bounds `Kt [true] ≤ 9`, `Kt [false] ≤ 7`, `Kt_cond [true] [true] ≤ 9` (composing-machine values; concrete numerals are machine-relative) | — | `Kt_singleton_true_le`, `Kt_singleton_false_le`, `Kt_cond_singleton_true_self_le` | ✅ |
+| Machine floor `5 ≤ Kt_cond x y`; the first exact value `Kt_cond [] y = 5`, `Kt [] = 5` (composing machine) | — | `five_le_Kt_cond`, `five_le_Kt`, `CompRuns.five_le_time`, `CompRuns.two_le_length`, `Kt_cond_nil`, `Kt_nil` | ✅ |
+
 ## The fuel clock (the rejected alternative)
 
 | Result | Source | Lean | Status |
@@ -118,5 +177,17 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the
   universal machine by itself); equivalently, a fuel-free self-interpreter with a
   proved linear slowdown.
-- Exact `Kt` values for small concrete strings (`native_decide`-free evaluation
-  strategy needed).
+- Exact `Kt` values beyond the floor: the step-budgeted evaluator
+  (`Evaluator.lean`) now provides the `native_decide`-free evaluation route, and
+  `Kt [] = 5` is exact on the public composing machine (machine floor + the
+  embedded one-bit eraser). Exact values for nonempty strings need a finite
+  enumeration of the programs and budgets between the floor and the certified
+  upper bounds (not started).
+- A `Kt`-rate/`K`-rate separation (the ❌ in the asymptotic layer): exhibiting a
+  sequence of positive `Kt`-rate and zero `K`-rate needs an untimed `K`-rate layer
+  and a depth construction; neither is started.
+- Conditioning for the probabilistic measure (the ❌ in the probabilistic layer):
+  `pKt(x|y) ≤ pKt(x)` needs a randomness-preserving context-erase convention — a
+  machine variant that discards the conditioning string while keeping the random
+  tape. The present erase bits discard the whole context, which is exactly what makes the
+  deterministic embeddings zero-constant and is too coarse for this statement.

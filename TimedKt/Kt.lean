@@ -71,6 +71,17 @@ theorem Kt_cond_le_of_runs {p y x : BitString} {t : ℕ}
     Kt_cond x y ≤ ((programLength p + ceilLog2 t : ℕ) : ENat) :=
   TimedDecompressor.condKt_le_of_runs (D := timedCompUniversal) h
 
+/-- **The embed bridge.** A clocked run of the flagged machine prices `Kt_cond`
+through its embed node: one extra bit (the comp flag) and one extra transition.
+This is the tool that transports every flagged-machine certificate to the public
+measure. -/
+theorem Kt_cond_le_of_flaggedRuns {p y x : BitString} {t : ℕ}
+    (h : FlaggedRuns p y x t) :
+    Kt_cond x y ≤ ((programLength p + 1 + ceilLog2 (t + 1) : ℕ) : ENat) := by
+  refine le_trans (Kt_cond_le_of_runs (CompRuns.embed h)) ?_
+  refine Nat.cast_le.mpr ?_
+  simp [programLength]
+
 /-- The library's conditional complexity of the composing machine bounds `Kt_cond`
 from below: dropping the clock only shrinks the cost. -/
 theorem K_cond_le_Kt_cond (x y : BitString) :

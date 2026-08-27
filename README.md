@@ -224,6 +224,112 @@ inequality between `Bt` and `Wt` or `Kt` is claimed in either direction: a singl
 write can carry arbitrarily many bits and a written `0` carries none, so per-run
 ledger domination fails both ways.
 
+## The asymptotic layer
+
+Single-instance `Kt` admits hardcoding — `Kt(x | y) ≤ |x| + O(1)`
+(`Kt_cond_le_length`) — so per-instance optimality cannot separate computing an output
+from printing it, and for a one-bit output even the conditional complexity is `O(1)`
+outright. The standard resolution measures a whole output family:
+`TimedKt/Asymptotic.lean` fixes an infinite sequence `Z : ℕ → Bool` and tracks the
+profile `ktProfile Z n = Kt(Z↾n)` (a natural number — the measure is everywhere
+finite) and its limsup density `ktRate Z = limsup ktProfile Z n / n`, valued in
+`ℝ≥0∞`. The rate is the time-bounded sibling of the prefix-complexity densities of
+constructive dimension (Lutz's dimension in complexity classes; Mayordomo's Kolmogorov
+characterization; the `limsup` form corresponds to the strong dimension of Athreya,
+Hitchcock, Lutz, and Mayordomo), and measuring a Boolean function through its truth
+table — `truthTableSeq`, `ttKtRate`, via the canonical enumeration
+`bitStringEnum : ℕ ≃ BitString` — is the meta-complexity convention of Allender,
+Buhrman, Koucký, van Melkebeek, and Ronneburger.
+
+Two theorems bracket the rate. Hardcoding pins it at the ceiling: `ktRate Z ≤ 1` for
+every sequence, however uncomputable (`ktRate_le_one`). A uniform generator collapses
+it: if runs of the flagged machine — the embedded inner layer, carried into the
+public measure by the embed bridge `Kt_cond_le_of_flaggedRuns` at one bit and one
+transition, both absorbed by the densities — produce every prefix with description
+length at most `g n` and runtime at most `T n`, and the densities `g n / n` and
+`ceilLog2 (T n) / n` both vanish, then `ktRate Z = 0`
+(`ktRate_eq_zero_of_witnesses`; the fixed-code form `ktRate_eq_zero_of_code` feeds a
+single `Nat.Partrec.Code` an input-tape family, the code's unary prefix entering as a
+constant absorbed by the density hypotheses). Algorithms are therefore visible at the
+rate level even though every single prefix admits the printing bound. The write
+measure supports the same construction (`wtProfile`, `wtRate`), with
+`wtRate ≤ ktRate` (`wtRate_le_ktRate`).
+
+What is **not** claimed: any sequence separating the `Kt`-rate from the untimed
+`K`-rate. A sequence of positive `Kt`-rate and zero `K`-rate would exhibit
+computational depth as a density; the package proves the two bracketing theorems
+only.
+
+## The probabilistic layer
+
+Probabilistic time-bounded complexity replaces the single program run by a majority
+over random tapes. On a machine with a context slot the natural convention is to pass
+the randomness **as** a distinguished context, so no machine changes are needed:
+`TimedKt/Probabilistic.lean` counts, for each program and time bound, the length-`R`
+random tapes (functions `Fin R → Bool`, `2^R` of them, entering the machine as
+bitstrings) on which a clocked run produces `x` within the bound, and prices
+
+```
+pKt(x) = min { |p| + ⌈log₂ t⌉ : p produces x within t transitions on ≥ 2/3 of the tapes }
+```
+
+with the tape length minimized over but not priced — randomness is free, only
+description and time are priced, the convention of Oliveira's `rKt` (ICALP 2019) and
+the `pKt` of Goldberg, Kabanets, Lu, and Oliveira (CCC 2022). The conditional form
+needs no new machine either: `pKt_cond x y` passes the pair of the conditioning
+string and the tape as the context (`ctxJoin`).
+
+The deterministic embedding is exact (`pKt_le_Kt`, `pKt_cond_le_Kt`): an attained
+`Kt`-witness runs with empty context, so flipping the single erase bit at its root
+(the flagged context flag for an embed node, the comp erase bit for a composition
+node) erases whatever context it receives — it succeeds on **every** random tape, a
+majority of `2^R` out of `2^R`, with the same length and transition count. `Kt`
+therefore bounds both probabilistic measures with additive constant zero.
+
+What is **not** claimed: `pKt_cond x y ≤ pKt x` — conditioning for the probabilistic
+measure. The machine's erase bits discard the whole context, conditioning string and
+randomness together, so a probabilistic witness that actually reads its tape cannot
+be transported to the joined context; the statement needs a randomness-preserving
+erase (a machine variant that discards `y` while keeping the tape), a further
+machine-design step recorded as open. The coding theorem and the average-case theory
+of the probabilistic measures need probability-weighted enumeration and clocked
+self-simulation, deliberately out of scope (clocked self-simulation is the
+self-interpreter open item of the invariance scope above).
+
+## Certified evaluation
+
+`TimedKt/Evaluator.lean` makes the operational semantics executable inside the
+kernel's reach: `runBounded b c n` mirrors `Run`'s clauses one for one under a
+transition budget `b` — computable, structurally recursive on the budget, no fuel —
+and returns the exact write-once trace together with the exact transition count, or
+`none` when the run does not fit within `b` transitions. Soundness and completeness
+identify its successes with the `Run` derivations within budget (`runBounded_sound`,
+`runBounded_complete`, packaged as `runBounded_eq_some_iff`), so **bounded halting is
+decidable**: `∃ T s, Run c n T s ∧ s ≤ b` is decided by running the evaluator
+(`runBounded_isSome_iff`, `decidableRunWithin`), and any success computes `numSteps`
+exactly (`numSteps_of_runBounded`).
+
+Every evaluator success is a certificate: `Kt_cond_le_of_runBounded` replays the
+witness through the timed universal machine (`universalRuns_of_run`) under a `false`
+context flag and the embed bridge (`Kt_cond_le_of_flaggedRuns`), pricing the decoded
+output at `encode c + 3 + |d|` program bits plus `⌈log₂ (encode c + s + 4)⌉` time
+bits. Concrete certified bounds, every component evaluated by `rfl`/`simp`/kernel
+`decide` — no `native_decide` anywhere: `Kt [true] ≤ 9` (`Kt_singleton_true_le`),
+`Kt [false] ≤ 7` (`Kt_singleton_false_le`), and the conditional
+`Kt_cond [true] [true] ≤ 9` (`Kt_cond_singleton_true_self_le`). Concrete values are
+machine-relative — these are the composing-machine values (the flagged-machine
+numerals are two smaller: one comp-flag bit, one transition inside the logarithm).
+
+One value is exact. Every run of the composing machine spends its comp flag on top
+of a flagged run — itself at least four transitions (flag, prefix scan, at least one
+code transition, decode) on at least one program bit — or is a composition of such
+runs, which only costs more; so every witness value is at least `2 + ⌈log₂ 5⌉ = 5`
+(`five_le_Kt_cond`) — a universal floor, with no enumeration involved. The empty
+string attains it with the two-bit program `[false, true]`, embedding the flagged
+one-bit eraser whose empty tail parses to `Code.zero`: `Kt_cond [] y = 5` for every
+context, and **`Kt [] = 5`** (`Kt_cond_nil`, `Kt_nil`) — the first exact `Kt` value
+of the formalization.
+
 ## Why the clock is transitions, not fuel
 
 The obvious first candidate for a runtime notion over `Nat.Partrec.Code` is
