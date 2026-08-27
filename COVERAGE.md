@@ -124,8 +124,12 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Hardcode ceiling at the profile: `ktProfile Z n ≤ n + c` | LV (length upper bound) | `ktProfile_le` | ✅ |
 | The rate `limsup Kt(Z↾n)/n` in `ℝ≥0∞` | Lutz03 (constructive dimension), time-bounded analogue | `ktRate` | ✅ |
 | Rate ceiling: `ktRate Z ≤ 1` for every sequence | Lutz03, time-bounded analogue of the dimension ceiling | `ktRate_le_one` | ✅ |
-| Generator collapse: vanishing description and log-runtime densities force rate `0` | — | `ktRate_eq_zero_of_witnesses`; fixed-code form `ktRate_eq_zero_of_code` | ✅ |
-| Truth-table framing: canonical enumeration, truth-table sequence and rate | ABKMR (meta-complexity convention) | `bitStringEnum`, `truthTableSeq`, `ttKtRate`, `ttKtRate_le_one`, `ttKtRate_eq_zero_of_witnesses` | ✅ |
+| Collapse ladder, level 1 — nonuniform prefix witnesses (sublinear advice): vanishing description and log-runtime densities force rate `0` | — | `ktRate_eq_zero_of_witnesses` | ✅ |
+| Collapse ladder, level 2 — one fixed code, arbitrary (possibly noncomputable) input family: code-uniform with advice inputs | — | `ktRate_eq_zero_of_code` | ✅ |
+| Collapse ladder, level 3 — fully uniform: one fixed code on the canonical input `Nat.bits n`, no advice; description density discharged internally | — | `ktRate_eq_zero_of_uniform_code`, `bits_length_le_ceilLog2_succ`, `eventually_mul_ceilLog2_succ_le`, `tendsto_ceilLog2_succ_div_atTop_nhds_zero` | ✅ |
+| Characteristic-sequence framing: canonical enumeration, characteristic sequence and its rate (enumeration-dependent — **not** the ABKMR truth table) | — | `bitStringEnum`, `charSeq`, `charSeqKtRate`, `charSeqKtRate_le_one`, `charSeqKtRate_eq_zero_of_witnesses` | ✅ |
+| Truth tables per arity: lexicographic enumeration of length-`n` inputs (counted, complete, duplicate-free), the `2 ^ n`-bit table, its profile, and the rate normalized by table length; ceiling and witness collapse | ABKMR (meta-complexity convention) | `lexStrings`, `lexStrings_length`, `mem_lexStrings`, `lexStrings_nodup`, `truthTable`, `truthTable_length`, `ttProfile`, `ttKtRate`, `ttKtRate_le_one`, `ttKtRate_eq_zero_of_witnesses` | ✅ |
+| Code-uniform collapse for the per-arity truth-table rate (a level-2/3 analogue over the `2 ^ n` denominator) | — | not stated; only the witness form `ttKtRate_eq_zero_of_witnesses` is proved | ❌ |
 | Write-measure rate and its comparison to the time rate | — | `wtProfile`, `wtProfile_cast`, `wtRate`, `wtRate_le_ktRate` | ✅ |
 | A sequence of positive `Kt`-rate and zero `K`-rate (computational depth as a density) | — | not constructed; the layer provides only the bracketing theorems | ❌ |
 
@@ -183,9 +187,13 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
   embedded one-bit eraser). Exact values for nonempty strings need a finite
   enumeration of the programs and budgets between the floor and the certified
   upper bounds (not started).
-- A `Kt`-rate/`K`-rate separation (the ❌ in the asymptotic layer): exhibiting a
+- A `Kt`-rate/`K`-rate separation (a ❌ in the asymptotic layer): exhibiting a
   sequence of positive `Kt`-rate and zero `K`-rate needs an untimed `K`-rate layer
   and a depth construction; neither is started.
+- A code-uniform collapse for the truth-table rate (the other ❌ in the asymptotic
+  layer): the analogue of ladder levels 2–3 over the `2 ^ n` denominator needs a
+  uniform encoding of the arity as an input tape and a table-normalized unary-prefix
+  absorption; only the witness form is proved.
 - Conditioning for the probabilistic measure (the ❌ in the probabilistic layer):
   `pKt(x|y) ≤ pKt(x)` needs a randomness-preserving context-erase convention — a
   machine variant that discards the conditioning string while keeping the random
