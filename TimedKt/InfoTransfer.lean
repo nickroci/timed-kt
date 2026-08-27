@@ -22,7 +22,7 @@ into statements about concrete runs of the machine.
 needs no hypothesis there: for every `x` and `y` some optimal run produces `x` from
 `y`, and its transition count is at most two to the measured complexity
 (`exists_run_time_le_two_pow_Kt_cond`). The optimal description length bounds the
-honest runtime — each bit of measured complexity at most doubles the transition
+runtime — each bit of measured complexity at most doubles the transition
 count of the optimal witness.
 
 **Information transfer.** `ktTransfer y x = Kt x - Kt_cond x y` is the time-bounded
@@ -87,7 +87,7 @@ theorem Kt_lt_top (x : BitString) : Kt x < ⊤ :=
 the composing machine: `CompRuns p y x t` with `Kt_cond x y = n` and `t ≤ 2 ^ n`.
 The measured complexity prices the witness's program length and the ceiling logarithm
 of its transition count together, so the count itself is at most `2 ^ n`: each bit of
-measured complexity at most doubles the honest runtime of the optimal witness. -/
+measured complexity at most doubles the runtime of the optimal witness. -/
 theorem exists_run_time_le_two_pow_Kt_cond (x y : BitString) :
     ∃ (p : BitString) (t n : ℕ),
       CompRuns p y x t ∧ Kt_cond x y = (n : ENat) ∧ t ≤ 2 ^ n := by

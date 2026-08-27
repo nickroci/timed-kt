@@ -128,7 +128,7 @@ analogue of `I(y : x) = K(x) − K(x | y)` — well-defined with no context-size
 correction term (`ktTransfer`, `TimedKt/InfoTransfer.lean`): it is nonnegative by
 construction and satisfies `ktTransfer y x + Kt(x | y) = Kt(x)` exactly. A finite
 `condKt` is attained by an actual run (`TimedDecompressor.exists_runs_condKt`), so
-the optimal description length bounds the honest runtime — a witness for `x` from `y`
+the optimal description length bounds the witness runtime — a witness for `x` from `y`
 runs within `2 ^ Kt(x | y)` transitions, and every bit of transferred information
 halves that worst-case runtime (`exists_run_time_le_two_pow_of_ktTransfer`). The
 write measure supports the same construction (`wtTransfer`).
@@ -174,7 +174,7 @@ time overhead is the ceiling logarithm of the summed clock, within two bits of t
 sum of the ceiling logarithms (`ceilLog2_add_le`) plus a log-log term absorbed into
 the constant (`ceilLog2_two_mul_add_three_le`).
 
-The logarithmic term is honest, not slack: on a plain-style (non-prefix-free)
+The logarithmic term is necessary, not slack: on a plain-style (non-prefix-free)
 program format, an injective packing of two arbitrary programs into one must spend
 `Ω(log)` bits delimiting the split on some inputs, so a uniform additive constant
 is the signature of a prefix-free sibling measure, not of plain `Kt` (Li–Vitányi
