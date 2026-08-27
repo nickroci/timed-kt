@@ -70,6 +70,20 @@ instances are `pKt` (the raw tape as context) and `pKt_cond` (the context `ctxJo
   constant zero, plain and conditional alike;
 * `one_le_pKt`, `pKt_lt_top`, `pKt_cond_lt_top` — positivity (every majority witness
   carries the context flag) and everywhere-finiteness (through the embeddings).
+
+## Scope
+
+`pKt_cond x y ≤ pKt x` — conditioning for the probabilistic measure — is **not**
+proved here. The public machine's flag erases the whole context, conditioning string
+and randomness together: a plain-probabilistic witness that actually reads its
+random tape cannot be transported to the joined context by the flag, and the
+context-erasing embedding above only reaches the deterministic `Kt`. The statement
+needs a randomness-preserving erase convention — a machine variant that discards the
+conditioning string while keeping the tape — which is a further machine-design step,
+recorded as open in `COVERAGE.md`. The coding theorem and the average-case theory of
+the probabilistic measures require probability-weighted enumeration and clocked
+self-simulation, deliberately out of scope here (clocked self-simulation is the
+linear-overhead self-interpreter open item of the invariance layer).
 -/
 
 open Kolmogorov

@@ -29,6 +29,14 @@ Sources:
 - **ABKMR** — E. Allender, H. Buhrman, M. Koucký, D. van Melkebeek,
   D. Ronneburger, *Power from random strings*, SIAM J. Comput. 35(6):1467–1493,
   2006: measuring a function family through the complexity of its truth table.
+- **Oliveira19** — I. C. Oliveira, *Randomness and intractability in Kolmogorov
+  complexity*, ICALP 2019, LIPIcs 132, 32:1–32:14: the randomized time-bounded
+  measure `rKt` — success probability at least `2/3`, description and time priced,
+  randomness free.
+- **GKLO22** — H. Goldberg, V. Kabanets, Z. Lu, I. C. Oliveira, *Probabilistic
+  Kolmogorov complexity with applications to average-case complexity*, CCC 2022,
+  LIPIcs 234, 16:1–16:60: probabilistic Kolmogorov measures (`pK`, `pKt`) and their
+  average-case theory.
 
 Rows with source "—" are constructions of this package (the operational ledgers, the
 fuel comparison layer, and the write/bit-priced measures) rather than formalizations
@@ -113,6 +121,19 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Write-measure rate and its comparison to the time rate | — | `wtProfile`, `wtProfile_cast`, `wtRate`, `wtRate_le_ktRate` | ✅ |
 | A sequence of positive `Kt`-rate and zero `K`-rate (computational depth as a density) | — | not constructed; the layer provides only the bracketing theorems | ❌ |
 
+## The probabilistic layer
+
+| Result | Source | Lean | Status |
+|---|---|---|---|
+| Random tapes (`Fin R → Bool`, `2 ^ R` of them), success within a time cutoff, success count, two-thirds majority — parameterized by how the tape enters the context | Oliveira19 (convention) | `card_randomTapes`, `SucceedsOn`, `successCountAt`, `successCount`, `HasMajorityAt`, `HasMajority` (`Probabilistic.lean`) | ✅ |
+| Monotonicity in the time bound (definitional from the `∃ t' ≤ t` cutoff) | — | `SucceedsOn.mono`, `successCountAt_mono`, `successCount_mono`, `HasMajorityAt.mono`, `HasMajority.mono` | ✅ |
+| The probabilistic measure, randomness as context; tape length minimized over but unpriced | Oliveira19, GKLO22 | `pKtAt`, `pKt`, `ctxJoin`, `pKt_cond` | ✅ |
+| Witness upper bound from any majority | — | `pKtAt_le_of_hasMajority` | ✅ |
+| **Zero-constant embeddings** `pKt(x) ≤ Kt(x)` and `pKt(x\|y) ≤ Kt(x)` — the context-erasing witness succeeds on every random tape | deterministic-to-probabilistic comparison, here with constant `0` | `pKt_le_Kt`, `pKt_cond_le_Kt`; general form `pKtAt_le_Kt`, via `exists_forall_succeedsOn_Kt`, `hasMajorityAt_of_forall_succeedsOn` | ✅ |
+| Positivity and everywhere-finiteness | — | `one_le_pKt`, `one_le_pKt_cond`, `pKt_lt_top`, `pKt_cond_lt_top`; general forms `one_le_pKtAt`, `HasMajorityAt.one_le_programLength` | ✅ |
+| Conditioning for the probabilistic measure, `pKt(x\|y) ≤ pKt(x)` | LV (analogue of the deterministic conditioning) | the flag erases conditioning string and randomness together; the statement needs a randomness-preserving erase — a machine variant discarding `y` while keeping the tape — a further machine-design step | ❌ |
+| Coding theorem and average-case applications for the probabilistic measure | Oliveira19, GKLO22 | require probability-weighted enumeration and clocked self-simulation — the linear-overhead self-interpreter open item (see Invariance scope) | ➖ (out of scope) |
+
 ## The fuel clock (the rejected alternative)
 
 | Result | Source | Lean | Status |
@@ -147,3 +168,8 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 - A `Kt`-rate/`K`-rate separation (the ❌ in the asymptotic layer): exhibiting a
   sequence of positive `Kt`-rate and zero `K`-rate needs an untimed `K`-rate layer
   and a depth construction; neither is started.
+- Conditioning for the probabilistic measure (the ❌ in the probabilistic layer):
+  `pKt(x|y) ≤ pKt(x)` needs a randomness-preserving context-erase convention — a
+  machine variant that discards the conditioning string while keeping the random
+  tape. The present flag erases the whole context, which is exactly what makes the
+  deterministic embeddings zero-constant and is too coarse for this statement.

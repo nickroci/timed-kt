@@ -187,6 +187,41 @@ What is **not** claimed: any sequence separating the `Kt`-rate from the untimed
 computational depth as a density; the package proves the two bracketing theorems
 only.
 
+## The probabilistic layer
+
+Probabilistic time-bounded complexity replaces the single program run by a majority
+over random tapes. On a machine with a context slot the natural convention is to pass
+the randomness **as** a distinguished context, so no machine changes are needed:
+`TimedKt/Probabilistic.lean` counts, for each program and time bound, the length-`R`
+random tapes (functions `Fin R → Bool`, `2^R` of them, entering the machine as
+bitstrings) on which a clocked run produces `x` within the bound, and prices
+
+```
+pKt(x) = min { |p| + ⌈log₂ t⌉ : p produces x within t transitions on ≥ 2/3 of the tapes }
+```
+
+with the tape length minimized over but not priced — randomness is free, only
+description and time are priced, the convention of Oliveira's `rKt` (ICALP 2019) and
+the `pKt` of Goldberg, Kabanets, Lu, and Oliveira (CCC 2022). The conditional form
+needs no new machine either: `pKt_cond x y` passes the pair of the conditioning
+string and the tape as the context (`ctxJoin`).
+
+The deterministic embedding is exact (`pKt_le_Kt`, `pKt_cond_le_Kt`): an attained
+`Kt`-witness runs with empty context, so flipping its flag to `true` erases whatever
+context it receives — it succeeds on **every** random tape, a majority of `2^R` out
+of `2^R`, with the same length and transition count. `Kt` therefore bounds both
+probabilistic measures with additive constant zero.
+
+What is **not** claimed: `pKt_cond x y ≤ pKt x` — conditioning for the probabilistic
+measure. The machine's flag erases the whole context, conditioning string and
+randomness together, so a probabilistic witness that actually reads its tape cannot
+be transported to the joined context; the statement needs a randomness-preserving
+erase (a machine variant that discards `y` while keeping the tape), a further
+machine-design step recorded as open. The coding theorem and the average-case theory
+of the probabilistic measures need probability-weighted enumeration and clocked
+self-simulation, deliberately out of scope (clocked self-simulation is the
+self-interpreter open item of the invariance scope above).
+
 ## Why the clock is transitions, not fuel
 
 The obvious first candidate for a runtime notion over `Nat.Partrec.Code` is
