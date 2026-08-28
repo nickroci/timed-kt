@@ -85,6 +85,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | **Triangle/composition inequality**: `Kt_cond x y = n₁ → Kt_cond y z = n₂ → Kt_cond x z ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (the `7` is a literal in the theorem statement; the `∃ c` form is the corollary `Kt_triangle_exists`) — the logarithmic delimitation term is necessary for any plain-style (non-prefix-free) program format (an injective packing of two arbitrary programs into one costs a log on some inputs); a uniform constant is the property of a prefix-free sibling measure, not of plain `Kt` | LV | `Kt_triangle` (`Triangle.lean`); composition as a machine primitive (comp flag, erase bit, gamma split, recursion) | ✅ |
 | Easy direction of symmetry of information: `Kt_cond x y = n₁ → Kt y = n₂ → Kt x ≤ n₁ + n₂ + 3 * ceilLog2 (n₁ + 1) + 7` (literal `7`; `∃ c` form `Kt_le_Kt_cond_add_Kt_exists`) | LV | `Kt_le_Kt_cond_add_Kt` (`Triangle.lean`), triangle at `z = []` | ✅ |
 | Untimed description-side invariance | KC-lib | `Kolmogorov.existsIsOptimalConditional` (dependency) | ✅ upstream |
+| Static prefix information is direction-independent up to `O(1)`: `K(x) + K(y\|x,K(x)) = K(y) + K(x\|y,K(y)) + O(1)` (two inequalities) | KC-lib | `prefixDirectionalInformation_directionIndependent` (`StaticInformationSymmetry.lean`), packaging upstream prefix symmetry of information and pair symmetry | ✅ |
 
 ## Attainment and information transfer
 

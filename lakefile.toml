@@ -11,7 +11,8 @@ maxSynthPendingDepth = 3
 
 # Untimed algorithmic-information layer: Alexey Milovanov's kolmogorov_complexity
 # (Apache-2.0), pinned to an exact upstream commit on Lean/Mathlib v4.33.0.
-# We import only Core.Basic, Core.UniversalDecompressor, and Core.Invariance.
+# We import the core machine layer and the proved prefix
+# symmetry-of-information theorem.
 [[require]]
 name = "kolmogorov_complexity"
 git = "https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean"

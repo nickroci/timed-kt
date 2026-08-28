@@ -23,4 +23,5 @@ import TimedKt.Asymptotic
 import TimedKt.Probabilistic
 import TimedKt.BitCost
 import TimedKt.Triangle
+import TimedKt.StaticInformationSymmetry
 import TimedKt.Examples

@@ -21,6 +21,7 @@ THEOREMS=(
   TimedKt.Kt_le_Kt_cond_add_Kt
   TimedKt.Wt_triangle
   TimedKt.Bt_triangle
+  TimedKt.prefixDirectionalInformation_directionIndependent
   TimedKt.compRuns_iff_produces
   TimedKt.isDecompressor_compUniversal
   TimedKt.universalRuns_iff_produces
