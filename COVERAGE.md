@@ -69,6 +69,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Computability of the composing machine (stack machine + `Partrec.fix`) | — | `compStep`, `compUniversal_eq_fix`, `isDecompressor_compUniversal` (`CompPartrec.lean`) | ✅ |
 | Clocked composing relation; soundness/completeness; uniqueness of `(x, t)` | — | `CompRuns`, `compRuns_iff_produces`, `CompRuns.unique`, `timedCompUniversal` (`CompRun.lean`) | ✅ |
 | Transfer: composing machine ≤ flagged machine `+ 2` | — | `condKt_comp_le_condKt_flagged` (`CompRun.lean`) | ✅ |
+| Polynomial relation of the `Run` clock to Turing-machine time (`Kt ≤ Kt_TM + O(1)`; `Kt_TM(x\|y) ≤ \|p\| + d·⌈log₂(t + \|p\| + \|y\|)⌉ + c` per witness) | Levin73 (Kt is defined over TMs) | not formalized; informal argument only (README, *What `t` measures*): `t` counts unit-cost dispatches on unbounded naturals, not bit operations | ❌ |
 
 ## Invariance and bounds
 
@@ -177,6 +178,15 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 
 ## Open items
 
+- Relation of the `Run` clock to Turing-machine time. `t` counts unit-cost
+  `succ`/`pair`/`unpair` dispatches on unbounded naturals under a list encoding of
+  `Θ(2^|x|)` bits, so `Kt` here is relative to that structural clock. The informal
+  argument (hash-consed pair-DAG simulation; README, *What `t` measures*) suggests a
+  polynomial relation: in the TM-from-`Run` direction a constant factor on the time
+  term plus additive `O(log |p|)` (and `O(log |y|)` for conditional `Kt`), and an
+  additive constant in the other; neither direction is formalized. The
+  faithful upgrade is a machine-checked DAG simulation over an explicit
+  pointer-machine cost model.
 - Comparison of `Bt` with `Wt` or `Kt`: the pointwise route is closed both ways, so
   any inequality needs a genuinely different argument (or a refutation).
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the

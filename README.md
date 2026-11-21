@@ -13,7 +13,9 @@ for one explicit universal machine `U`, with a machine-checked time-side invaria
 theorem over a precisely stated comparison class and a machine-checked triangle
 inequality with explicit constants. `|p|` is the length of an actual
 bitstring program, and `t` counts transitions of an explicit operational semantics —
-neither constructor counts nor `Code.evaln` fuel enter the definition.
+neither constructor counts nor `Code.evaln` fuel enter the definition. The measure is
+Levin-style `Kt` **relative to this explicit structural clock**; its relation to
+Turing-machine time is not formalized here (see [What `t` measures](#what-t-measures)).
 
 The untimed algorithmic-information layer is Alexey Milovanov's
 [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
@@ -103,6 +105,46 @@ one transition for reading the context flag. The composing layer adds, per node:
 The run-time price is `ceilLog2 t`, the
 least `k` with `t ≤ 2^k` (`ceilLog2_isLeast`); the convention at zero is
 `ceilLog2 0 = 0`, which never prices a run since every successful run has `t ≥ 1`.
+
+## What `t` measures
+
+`t` counts dispatches of a unit-cost structural machine over unbounded naturals:
+`succ`, `Nat.pair` and its inverse `unpair` (`left`/`right`) each cost one transition
+regardless of the size of their arguments. This also yields implicit unit-cost
+equality and order tests on arbitrarily large values (for example,
+`left (succ (pair A B)) = 0` iff `A = B`). Bitstrings enter through Mathlib's list
+encoding, whose values have `Θ(2^|x|)` bits, and `pair 0 n = n²`, so `k` pairings
+reach `2^k`-fold bit growth. So `t` is **not** a bit-operation count,
+and this package proves no relation between `t` and Turing-machine time.
+
+Status of the comparison with Turing-machine `Kt` (informal argument, outlined below
+only; **not formalized and not independently verified**):
+
+* *`Run` from TM, additive.* A fixed `Code` simulating a fixed universal TM in linear
+  time (two-stack tape, `O(1)` dispatches per TM step) under doubling time budgets
+  suggests `Kt(x | y) ≤ Kt_TM(x | y) + O(1)`. TM-`Kt` upper
+  bounds and `Run`-`Kt` lower bounds would then transfer additively.
+* *TM from `Run`, polynomial.* `Code` has no addition, multiplication, predecessor or
+  bit-extraction primitive: `pair`/`unpair` are mutually inverse, so `succ` is the
+  only non-structural operation. We therefore expect (unproved) that the mechanism by
+  which unit-cost multiplication makes RAMs as powerful as PSPACE (Hartmanis and
+  Simon, *On the power of multiplication in random access machines*, SWAT 1974) does
+  not apply. Large values have small canonical pair-DAGs (a node `pair A B` per value
+  `≥ 2`, children
+  recursively canonical; depth `≤ log log n + O(1)`), and a hash-consed DAG
+  simulation suggests that every run of `t` transitions is simulable by a TM in time
+  `(t + |p| + |y|)^d`. That gives `Kt_TM(x | y) ≤ |p| + d·⌈log₂(t + |p| + |y|)⌉ + c`
+  for each witness: a constant factor `d` on the time term, an additive `O(log |p|)`
+  term (already visible in `Kt_cond_le_length`, where `t = O(1)` while a TM needs
+  `≥ |x|` steps to write `x`), and, in this sketch, for conditional `Kt` an extra
+  `log |y|` term that need not be bounded by `Kt(x | y)`.
+
+Consequently, concrete values and additive constants proved here do **not** transfer
+as upper bounds to Turing-machine `Kt`. The faithful upgrade is a machine-checked
+DAG simulation over an explicit pointer-machine cost model (an open item in
+`COVERAGE.md`). A bit-priced clock is not a substitute: the bit measure `Bt` charges
+`Nat.size` of written values, so under the list encoding it prices the size of the
+encoding rather than the work performed (an unformalized observation).
 
 ## The conditioning theorem
 
