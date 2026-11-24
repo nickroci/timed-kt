@@ -123,7 +123,12 @@ only; **not formalized and not independently verified**):
 * *`Run` from TM, additive.* A fixed `Code` simulating a fixed universal TM in linear
   time (two-stack tape, `O(1)` dispatches per TM step) under doubling time budgets
   suggests `Kt(x | y) ≤ Kt_TM(x | y) + O(1)`. TM-`Kt` upper
-  bounds and `Run`-`Kt` lower bounds would then transfer additively.
+  bounds and `Run`-`Kt` lower bounds would then transfer additively. **Known obstacle
+  (open):** bitstrings arrive in Mathlib's list encoding `succ (pair a l)`, and `Code`
+  has no predecessor primitive. Unless that encoding can be destructured in `O(1)`
+  transitions per cell, reading an input or tape costs transitions proportional to its
+  *value* (up to `2^|x|`), and this additive direction fails as stated (it would then need
+  a different input encoding).
 * *TM from `Run`, polynomial.* `Code` has no addition, multiplication, predecessor or
   bit-extraction primitive: `pair`/`unpair` are mutually inverse, so `succ` is the
   only non-structural operation. We therefore expect (unproved) that the mechanism by
