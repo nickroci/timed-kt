@@ -6,6 +6,7 @@ Authors: Nicholas Holden
 import TimedKt.ProgSize
 import TimedKt.Trace
 import TimedKt.Run
+import TimedKt.ListDestruct
 import TimedKt.FuelCost
 import TimedKt.CeilLog2
 import TimedKt.Gamma

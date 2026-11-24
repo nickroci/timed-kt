@@ -61,6 +61,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Fuel-free operational semantics for `Nat.Partrec.Code` | — | `Run` (`Run.lean`) | ✅ |
 | `Run` sound and complete for `Code.eval` | — | `exists_run_iff_exists_tracen` + `evaln_of_tracen` (`Run.lean`, `Trace.lean`) | ✅ |
 | Determinism: unique trace and transition count | — | `Run.deterministic`, `numSteps_eq_of_run` (`Run.lean`) | ✅ |
+| Constant-cost destructuring of the list encoding: fixed codes compute nil test, head bit and tail of `encode l` for every `l : List Bool` within `163` `Run` transitions (no predecessor primitive needed) | — | `list_destruct_const`, `nonNil_runsLe` (`46`), `head_runsLe` (`119`), `tail_runsLe` (`163`), `sw3_spec`; guards `right_not_tail`, `leftLeft_not_head` (`ListDestruct.lean`) | ✅ |
 | Clocked universal machine; clock-forgetting is definitional | — | `UniversalRuns`, `timedUniversal_toMap` (`UniversalRun.lean`) | ✅ |
 | Soundness/completeness of the clocked relation | — | `universalRuns_iff_produces` (`UniversalRun.lean`) | ✅ |
 | Existence/uniqueness of the transition count per successful run | — | `UniversalRuns.unique` (`UniversalRun.lean`) | ✅ |
@@ -185,9 +186,11 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
   argument (hash-consed pair-DAG simulation; README, *What `t` measures*) suggests a
   polynomial relation: in the TM-from-`Run` direction a constant factor on the time
   term plus additive `O(log |p|)` (and `O(log |y|)` for conditional `Kt`), and an
-  additive constant in the other; neither direction is formalized. The
-  faithful upgrade is a machine-checked DAG simulation over an explicit
-  pointer-machine cost model.
+  additive constant in the other; neither direction is formalized. For the additive
+  direction, `O(1)`-transition access to list-encoded inputs is proved
+  (`list_destruct_const`); the linear-time TM simulation inside one `Code` under
+  doubling budgets is not. The faithful upgrade is a machine-checked DAG simulation
+  over an explicit pointer-machine cost model.
 - Comparison of `Bt` with `Wt` or `Kt`: the pointwise route is closed both ways, so
   any inequality needs a genuinely different argument (or a refutation).
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the

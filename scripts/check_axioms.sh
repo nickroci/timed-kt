@@ -38,6 +38,10 @@ THEOREMS=(
   TimedKt.rKt_cond_le_Kt
   TimedKt.Kt_cond_le_of_flaggedRuns
   TimedKt.Kt_nil
+  TimedKt.list_destruct_const
+  TimedKt.nonNil_runsLe
+  TimedKt.head_runsLe
+  TimedKt.tail_runsLe
 )
 
 tmpdir="$(mktemp -d)"
