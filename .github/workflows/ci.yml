@@ -24,3 +24,43 @@ jobs:
 
       - name: Axiom gate
         run: ./scripts/check_axioms.sh
+
+      - name: Trusted statement layer (build + axiom audit)
+        run: |
+          lake build ComparatorKtHeadline
+          out="$(lake env lean axiom_audit_comparator_ktHeadline.lean)"
+          echo "$out"
+          bad="$(echo "$out" | tr '\n' ' ' | grep -o "depends on axioms: \[[^]]*\]" | sed 's/.*\[//; s/\]//' \
+            | tr ',' '\n' | tr -d ' ' | grep -v -x -E 'propext|Classical\.choice|Quot\.sound' || true)"
+          if [ -n "$bad" ] || echo "$out" | grep -q sorryAx; then
+            echo "ERROR: trusted layer depends on non-standard axioms: $bad"; exit 1
+          fi
+
+  comparator:
+    # Sandboxed comparator run (Linux Landlock via landrun): every Solution theorem has exactly the statement
+    # of its trusted Challenge namesake, uses only the standard axioms, and replays in the Lean kernel and in
+    # the independent nanoda kernel. Tool pins as in scripts/comparator_check.sh.
+    runs-on: ubuntu-latest
+    needs: build
+    env:
+      LANDRUN_COMMIT: 811cfff51ceaf3d9843708aa6d22e9b84ccac8b4
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Build (with mathlib cache)
+        uses: leanprover/lean-action@v1
+        with:
+          build-args: ComparatorKtHeadline
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Build landrun
+        run: |
+          GOBIN="$HOME/.local/bin" CGO_ENABLED=0 go install "github.com/zouuup/landrun/cmd/landrun@$LANDRUN_COMMIT"
+          echo "COMPARATOR_LANDRUN=$HOME/.local/bin/landrun" >> "$GITHUB_ENV"
+
+      - name: Comparator (sandboxed)
+        run: ./scripts/comparator_check.sh
