@@ -9,8 +9,8 @@ import KolmogorovMathlib.Prefix.ConditionalSymmetry
 /-!
 # Static Direction-Independence of Information
 
-This file records the proved, untimed theorem that motivates the proposed
-write-once law in the `irreducibility` project.
+This file records the proved, untimed theorem behind the question of whether a
+resource-sensitive (write-once) analogue holds.
 
 For an optimal conditional prefix machine, define the information in the
 direction `x then y` by
@@ -28,9 +28,8 @@ are within one uniform additive constant of one another.
 
 This is a theorem about static description length.  It does **not** mention
 runtime, a write-once trace, or the amount of information committed while a
-program runs.  The resource-sensitive lift is therefore kept as an explicit
-open proposition in `Irreducibility.IntrinsicTapeSymmetry`, rather than being
-silently inferred from this theorem.
+program runs.  The resource-sensitive lift is an open question; it is not proved
+in this package and is not to be inferred from this theorem.
 
 Uses only the Lean/Mathlib baseline assumptions and contains no proof holes.
 -/

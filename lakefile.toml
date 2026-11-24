@@ -20,3 +20,12 @@ rev = "f11c8f01e90a41e18fdc97f31561a04712dc699c"
 
 [[lean_lib]]
 name = "TimedKt"
+
+# Trusted statement for leanprover/comparator (layout after anthropics/formal-math, Apache-2.0):
+# Mathlib-only Statement / placeholder Challenge / Solution bridged to TimedKt. NOT in
+# defaultTargets. Build: `lake build ComparatorKtHeadline`; comparator configuration:
+# comparator/config_ktHeadline.json.
+[[lean_lib]]
+name = "ComparatorKtHeadline"
+srcDir = "comparator"
+roots = ["KtHeadline.Statement", "KtHeadline.Challenge", "KtHeadline.Solution"]

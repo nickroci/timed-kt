@@ -175,6 +175,7 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Check | Lean / script | Status |
 |---|---|---|
 | Headline theorems depend only on `propext`, `Classical.choice`, `Quot.sound` | `scripts/check_axioms.sh` (CI step after the build) | ✅ |
+| Mathlib-only trusted statement of 15 `Kt` claims (conditioning, invariance, length bound, triangle, easy symmetry, `Kt [] = 5`, floor, machine faithfulness, `Realization` guards), accepted by leanprover/comparator with nanoda. Not covered: `K ≤ Kt`, `Wt`/`Bt`, attainment, information transfer, rates, `rKt`, static symmetry, fuel divergence | `comparator/KtHeadline/`, `comparator/config_ktHeadline.json`, `scripts/comparator_check.sh` (run by hand, unsandboxed unless `COMPARATOR_LANDRUN` is set; not a CI step) | ✅ |
 
 ## Open items
 

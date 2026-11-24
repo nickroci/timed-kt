@@ -1,0 +1,28 @@
+{
+  "challenge_module": "KtHeadline.Challenge",
+  "solution_module": "KtHeadline.Solution",
+  "theorem_names": [
+    "KtHeadline.Solution.runEvalSpec",
+    "KtHeadline.Solution.runDeterministic",
+    "KtHeadline.Solution.compRunsComputable",
+    "KtHeadline.Solution.compRunsUnique",
+    "KtHeadline.Solution.conditioning",
+    "KtHeadline.Solution.invarianceUniversal",
+    "KtHeadline.Solution.invariance",
+    "KtHeadline.Solution.lengthBound",
+    "KtHeadline.Solution.triangle",
+    "KtHeadline.Solution.symmetryEasy",
+    "KtHeadline.Solution.fiveLeKtCond",
+    "KtHeadline.Solution.ktNil",
+    "KtHeadline.Solution.idTimedRealized",
+    "KtHeadline.Solution.idTimedCondKt",
+    "KtHeadline.Solution.fastTimedUnrealized"
+  ],
+  "definition_names": [],
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ],
+  "enable_nanoda": true
+}

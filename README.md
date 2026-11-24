@@ -456,6 +456,40 @@ axiom gate enforces this in CI.
 
 See `COVERAGE.md` for the source-to-Lean map and the open items.
 
+### Trusted statement (comparator)
+
+`comparator/KtHeadline/Statement.lean` restates the machine (`Run`, `UniversalRuns`,
+`FlaggedRuns`, `CompRuns`), `Kt_cond`, `Kt`, `TimedDecompressor` and `Realization`
+using Mathlib only, and states 15 claims; a reader who wants to know what is claimed
+without reading the library reads that one file. `Challenge.lean` holds the claims
+with `sorry`, `Solution.lean` proves them from `TimedKt` after proving that each
+restated definition agrees with the library's.
+
+```
+lake build ComparatorKtHeadline   # not a default target; only Challenge may report sorry
+./scripts/comparator_check.sh     # leanprover/comparator + nanoda on comparator/config*.json
+```
+
+Covered: conditioning `Kt(x|y) ≤ Kt(x)`; time-side invariance for the inner universal
+machine and for the public `Kt` (overhead `+ 4`), over `Realization`; the length
+bound; the triangle inequality and the easy direction of symmetry of information
+(literal `7`); `Kt [] = 5` and the floor `5 ≤ Kt(x|y)`; faithfulness of the machine
+(`Run` sound and complete for Mathlib's `Code.eval`, `Run` deterministic, `CompRuns`
+the clocked semantics of a partial recursive map with unique output and transition
+count); and guards for the `Realization` hypothesis (the identity machine is realized
+and has complexity `|x|`; the computable machine `fastTimed` has no realization).
+
+**Not covered** by the trusted statement, and so checked only by the library build
+and the axiom gate: `K ≤ Kt`; the write and bit measures `Wt`, `Bt` and their
+triangles; attainment of the infimum; information transfer; the rate theorems; the
+randomized measure `rKt`; the static direction-independence theorem; the
+fuel-divergence theorems. The guard `fastTimed` shows only that `Realization` is a
+genuine restriction; that the invariance bound itself fails for an unrealized
+machine is not proved. The script runs comparator without a sandbox unless
+`COMPARATOR_LANDRUN` names a real `landrun`; an unsandboxed pass is meaningful only
+to someone who trusts `Solution.lean` not to tamper with the check. The comparator
+check is not a CI step.
+
 ## Related work
 
 Machine-checked algorithmic information theory has so far covered the *untimed*
@@ -472,4 +506,6 @@ formalization of `Kt` in any proof assistant; corrections are welcome.
 ## License and attribution
 
 Apache-2.0 (see `LICENSE`). Depends on `kolmogorov_complexity` (Apache-2.0), pinned
-by commit in `lakefile.toml`; no code is copied from it.
+by commit in `lakefile.toml`; no code is copied from it. The comparator layout
+(`comparator/`) and `scripts/comparator_check.sh` are adapted from
+[anthropics/formal-math](https://github.com/anthropics/formal-math) (Apache-2.0).
