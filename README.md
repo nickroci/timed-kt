@@ -26,7 +26,10 @@ and `condLevinKt` in [cslib-frontier](https://github.com/cslib-community/cslib-f
 proves that its `Kt` is at most Turing-machine `Kt` of any fixed machine plus a constant,
 and adds the conditioning theorem `Kt(x | y) ≤ Kt(x)` with additive constant zero,
 the triangle inequality with explicit constants, and write- and bit-priced companion
-measures. To our knowledge, these three are not formalized elsewhere.
+measures. To our knowledge, the last three (zero-constant conditioning, the explicit-constant
+triangle inequality, and the write- and bit-priced measures) are not formalized elsewhere; the
+Turing-machine bound is not part of that claim (cslib-frontier proves a related optimality theorem
+over multi-tape machines).
 
 The untimed algorithmic-information layer is Alexey Milovanov's
 [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
@@ -592,8 +595,8 @@ results, `K ≤ Kt`, `Kt(x) ≤ |x| + O(log |x|)`, existence and runtime bounds 
 optimal witnesses, clock-preserving optimality of its universal machine over
 multi-tape machines, `MKtP ∈ EXP`, and `MINKT ∈ NP`. This package's Turing-machine model
 (`TimedKt/TuringMachine.lean`) restates CSLib's multi-tape machine, on which cslib-frontier
-builds, and its conditional input encoding follows cslib-frontier's `encPair`. As far as we can tell it does
-not state conditioning `Kt(x | y) ≤ Kt(x) + c`, a triangle inequality for `Kt`, or
+builds, and its conditional input encoding follows cslib-frontier's `encPair`. As far as we can tell,
+cslib-frontier does not state conditioning `Kt(x | y) ≤ Kt(x) + c`, a triangle inequality for `Kt`, or
 write- or bit-priced measures. Corrections are welcome.
 
 ## License and attribution

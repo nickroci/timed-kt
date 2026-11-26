@@ -357,8 +357,9 @@ theorem tmKt_copyTM_le (x y : BitString) :
 
 end TM
 
-/-- **Guard.** Instantiated at the copying machine, `Kt_cond_le_tmKt` is a nontrivial bound on
-every string: `Kt(x | y) ≤ |x| + ⌈log₂ (2 |x| + 1)⌉ + c`. -/
+/-- **Guard.** Instantiated at the copying machine, `Kt_cond_le_tmKt` is a finite bound on
+every string: `Kt(x | y) ≤ |x| + ⌈log₂ (2 |x| + 1)⌉ + c`. This is an inhabitation check only;
+it is weaker than `Kt_cond_le_length`. -/
 theorem Kt_cond_le_length_add_log : ∃ c : ℕ, ∀ x y : BitString,
     Kt_cond x y ≤ ((x.length + ceilLog2 (2 * x.length + 1) : ℕ) : ENat) + c := by
   obtain ⟨c, hc⟩ := Kt_cond_le_tmKt TM.copyTM
