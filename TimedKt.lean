@@ -26,3 +26,8 @@ import TimedKt.BitCost
 import TimedKt.Triangle
 import TimedKt.StaticInformationSymmetry
 import TimedKt.Examples
+import TimedKt.TuringMachine
+import TimedKt.RunLib
+import TimedKt.TMCode
+import TimedKt.TMSim
+import TimedKt.TMBridge

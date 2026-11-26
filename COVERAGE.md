@@ -70,7 +70,10 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 | Computability of the composing machine (stack machine + `Partrec.fix`) | — | `compStep`, `compUniversal_eq_fix`, `isDecompressor_compUniversal` (`CompPartrec.lean`) | ✅ |
 | Clocked composing relation; soundness/completeness; uniqueness of `(x, t)` | — | `CompRuns`, `compRuns_iff_produces`, `CompRuns.unique`, `timedCompUniversal` (`CompRun.lean`) | ✅ |
 | Transfer: composing machine ≤ flagged machine `+ 2` | — | `condKt_comp_le_condKt_flagged` (`CompRun.lean`) | ✅ |
-| Polynomial relation of the `Run` clock to Turing-machine time (`Kt ≤ Kt_TM + O(1)`; `Kt_TM(x\|y) ≤ \|p\| + d·⌈log₂(t + \|p\| + \|y\|)⌉ + c` per witness) | Levin73 (Kt is defined over TMs) | not formalized; informal argument only (README, *What `t` measures*): `t` counts unit-cost dispatches on unbounded naturals, not bit operations | ❌ |
+| Multi-tape Turing machines (CSLib model: read-only clamped input tape, `k` two-way work tapes, write-only output, deterministic transition function) and Turing-machine-clocked `Kt` of a fixed machine on `frame p ++ y` (cslib-frontier's conditional input encoding) | CSLib `Turing.MultiTapeTM`; Levin73 | `TM.MultiTapeTM`, `TM.Cfg`, `TM.MultiTapeTM.step`, `TM.frame`, `TM.tmKt`, `TM.tmKtPlain` (`TuringMachine.lean`) | ✅ |
+| **`Run` simulates Turing-machine time linearly**: for every finite-state binary multi-tape TM `M`, one fixed `Code` maps `encode (p, y)` to `encode x` within `a·t + b` transitions whenever `M` halts on `frame p ++ y` after `t` steps with output `x` (constant-transition step via a finite action table and `Nat.pair` stacks; lazy input; `rfind'` over doubling budgets) | — | `TMSim.tmSim_spec` (`TMBridge.lean`); `TMSim.step_spec`, `simRel_apply`, `zrel_move`, `tapeRel_update` (`TMSim.lean`); `zmove_spec`, `tapeUpd_spec`, `genPop_spec` (`TMCode.lean`); `mux_spec`, `prec_iter`, `rfind_spec`, `pow2_spec` (`RunLib.lean`) | ✅ |
+| **`Kt ≤ Kt_TM + O(1)`**: `Kt(x\|y) ≤ tmKt M x y + c_M` for every fixed finite-state binary multi-tape TM `M`; plain form; guard: a two-state copying machine has `tmKt ≤ \|x\| + ⌈log₂(2\|x\|+1)⌉` on every string | Levin73 (Kt is defined over TMs) | `Kt_cond_le_tmKt`, `Kt_le_tmKtPlain`; guard `TM.copyTM_outputsAt`, `TM.tmKt_copyTM_le`, `Kt_cond_le_length_add_log` (`TMBridge.lean`) | ✅ |
+| Converse: Turing-machine `Kt` bounded by `Run`-`Kt` (informally `Kt_TM(x\|y) ≤ \|p\| + d·⌈log₂(t + \|p\| + \|y\|)⌉ + c` per witness, via a hash-consed pair-DAG simulation) | — | not formalized; informal argument only (README, *What `t` measures*) | ❌ |
 
 ## Invariance and bounds
 
@@ -180,17 +183,17 @@ Status legend: ✅ formalized · 🟡 partial / scoped · ❌ not started · ➖
 
 ## Open items
 
-- Relation of the `Run` clock to Turing-machine time. `t` counts unit-cost
-  `succ`/`pair`/`unpair` dispatches on unbounded naturals under a list encoding of
-  `Θ(2^|x|)` bits, so `Kt` here is relative to that structural clock. The informal
-  argument (hash-consed pair-DAG simulation; README, *What `t` measures*) suggests a
-  polynomial relation: in the TM-from-`Run` direction a constant factor on the time
-  term plus additive `O(log |p|)` (and `O(log |y|)` for conditional `Kt`), and an
-  additive constant in the other; neither direction is formalized. For the additive
-  direction, `O(1)`-transition access to list-encoded inputs is proved
-  (`list_destruct_const`); the linear-time TM simulation inside one `Code` under
-  doubling budgets is not. The faithful upgrade is a machine-checked DAG simulation
-  over an explicit pointer-machine cost model.
+- Turing-machine `Kt` from `Run`-`Kt` (the converse of `Kt_cond_le_tmKt`). `t` counts
+  unit-cost `succ`/`pair`/`unpair` dispatches on unbounded naturals under a list encoding
+  of `Θ(2^|x|)` bits. The informal argument (hash-consed pair-DAG simulation; README,
+  *What `t` measures*) suggests a constant factor on the time term plus additive
+  `O(log |p|)` (and `O(log |y|)` for conditional `Kt`); not formalized. The faithful
+  upgrade is a machine-checked DAG simulation by a Turing machine. The other direction,
+  `Kt ≤ Kt_M + O(1)` for every fixed machine `M`, is proved (`Kt_cond_le_tmKt`); the
+  analogue for cslib-frontier's `levinKt`, whose machine is read from the program and
+  whose clock counts the described machine's steps, would need a `Code` interpreting
+  arbitrary machine descriptions with per-step cost polynomial in the description, and is
+  not formalized.
 - Comparison of `Bt` with `Wt` or `Kt`: the pointwise route is closed both ways, so
   any inequality needs a genuinely different argument (or a refutation).
 - Linear-overhead self-simulation of `timedUniversal` (a `Realization` of the

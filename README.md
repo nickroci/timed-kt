@@ -12,14 +12,18 @@ theorem over a precisely stated comparison class and a machine-checked triangle
 inequality with explicit constants. `|p|` is the length of an actual
 bitstring program, and `t` counts transitions of an explicit operational semantics —
 neither constructor counts nor `Code.evaln` fuel enter the definition. The measure is
-Levin-style `Kt` **relative to this explicit structural clock**; its relation to
-Turing-machine time is not formalized here (see [What `t` measures](#what-t-measures)).
+Levin-style `Kt` **relative to this explicit structural clock**. It is bounded by
+Turing-machine `Kt`: for every fixed multi-tape Turing machine `M`,
+`Kt(x | y) ≤ Kt_M(x | y) + c_M` (`Kt_cond_le_tmKt`, see
+[Turing-machine time](#turing-machine-time)); the converse bound is not formalized (see
+[What `t` measures](#what-t-measures)).
 
 This is not the first formalization of `Kt`: Levin's `Kt` and its conditional form
 are already in Lean 4, clocked by multi-tape Turing-machine steps, as
 [`Cslib.Kolmogorov.levinKt`](https://github.com/cslib-community/cslib-frontier/blob/dd766ace6443f3b4e3207f3da4989df05d0a361e/CslibFrontier/Computability/Kolmogorov/TimeBounded.lean)
 and `condLevinKt` in [cslib-frontier](https://github.com/cslib-community/cslib-frontier)
 (see [Related work](#related-work)). This package uses a different machine and clock,
+proves that its `Kt` is at most Turing-machine `Kt` of any fixed machine plus a constant,
 and adds the conditioning theorem `Kt(x | y) ≤ Kt(x)` with additive constant zero,
 the triangle inequality with explicit constants, and write- and bit-priced companion
 measures. To our knowledge, these three are not formalized elsewhere.
@@ -121,45 +125,104 @@ regardless of the size of their arguments. This also yields implicit unit-cost
 equality and order tests on arbitrarily large values (for example,
 `left (succ (pair A B)) = 0` iff `A = B`). Bitstrings enter through Mathlib's list
 encoding, whose values have `Θ(2^|x|)` bits, and `pair 0 n = n²`, so `k` pairings
-reach `2^k`-fold bit growth. So `t` is **not** a bit-operation count,
-and this package proves no relation between `t` and Turing-machine time.
+reach `2^k`-fold bit growth. So `t` is **not** a bit-operation count. What is proved is
+one direction of the comparison with Turing-machine time: `Run` simulates any fixed
+Turing machine with linear overhead.
 
-Status of the comparison with Turing-machine `Kt` (informal argument, outlined below
-only; **not formalized and not independently verified**):
+Status of the comparison with Turing-machine `Kt`:
 
-* *`Run` from TM, additive.* A fixed `Code` simulating a fixed universal TM in linear
-  time (two-stack tape, `O(1)` dispatches per TM step) under doubling time budgets
-  suggests `Kt(x | y) ≤ Kt_TM(x | y) + O(1)`. TM-`Kt` upper
-  bounds and `Run`-`Kt` lower bounds would then transfer additively. Input access is
-  not an obstacle (proved): although bitstrings arrive in Mathlib's list encoding
-  `succ (pair a l)` and `Code` has no predecessor primitive, fixed codes compute the nil
-  test, the head bit and the tail of `encode l` for every `l : List Bool` within `163`
-  transitions each (`TimedKt.list_destruct_const`, `TimedKt/ListDestruct.lean`), so one
-  list cell costs `O(1)` transitions, independent of the encoded value. What remains, and
-  is **not formalized**, is the simulation itself: a fixed `Code` running a universal TM
-  in linear time (with `O(1)` transitions per step, using these destructors on its tapes)
-  together with the budget-doubling argument.
-* *TM from `Run`, polynomial.* `Code` has no addition, multiplication, predecessor or
-  bit-extraction primitive: `pair`/`unpair` are mutually inverse, so `succ` is the
-  only non-structural operation. We therefore expect (unproved) that the mechanism by
-  which unit-cost multiplication makes RAMs as powerful as PSPACE (Hartmanis and
-  Simon, *On the power of multiplication in random access machines*, SWAT 1974) does
-  not apply. Large values have small canonical pair-DAGs (a node `pair A B` per value
-  `≥ 2`, children
-  recursively canonical; depth `≤ log log n + O(1)`), and a hash-consed DAG
-  simulation suggests that every run of `t` transitions is simulable by a TM in time
-  `(t + |p| + |y|)^d`. That gives `Kt_TM(x | y) ≤ |p| + d·⌈log₂(t + |p| + |y|)⌉ + c`
-  for each witness: a constant factor `d` on the time term, an additive `O(log |p|)`
-  term (already visible in `Kt_cond_le_length`, where `t = O(1)` while a TM needs
-  `≥ |x|` steps to write `x`), and, in this sketch, for conditional `Kt` an extra
-  `log |y|` term that need not be bounded by `Kt(x | y)`.
+* *`Run` from TM, additive: proved.* `Kt(x | y) ≤ Kt_M(x | y) + c_M` for every fixed
+  finite-state binary multi-tape Turing machine `M` (`Kt_cond_le_tmKt`; see
+  [Turing-machine time](#turing-machine-time)). Turing-machine `Kt` upper bounds therefore
+  transfer to this package's `Kt`, and lower bounds on this package's `Kt` transfer to
+  Turing-machine `Kt`, with an additive constant.
+* *TM from `Run`, polynomial: not formalized.* `Code` has no addition, multiplication,
+  predecessor or bit-extraction primitive: `pair`/`unpair` are mutually inverse, so `succ`
+  is the only non-structural operation. We therefore expect (unproved) that the mechanism
+  by which unit-cost multiplication makes RAMs as powerful as PSPACE (Hartmanis and Simon,
+  *On the power of multiplication in random access machines*, SWAT 1974) does not apply.
+  Large values have small canonical pair-DAGs (a node `pair A B` per value `≥ 2`, children
+  recursively canonical; depth `≤ log log n + O(1)`), and a hash-consed DAG simulation
+  suggests that every run of `t` transitions is simulable by a Turing machine in time
+  `(t + |p| + |y|)^d`. That gives `Kt_TM(x | y) ≤ |p| + d·⌈log₂(t + |p| + |y|)⌉ + c` for
+  each witness: a constant factor `d` on the time term, an additive `O(log |p|)` term
+  (already visible in `Kt_cond_le_length`, where `t = O(1)` while a Turing machine needs
+  `≥ |x|` steps to write `x`), and, in this sketch, for conditional `Kt` an extra `log |y|`
+  term that need not be bounded by `Kt(x | y)`. This argument is informal and not
+  independently verified.
 
-Consequently, concrete values and additive constants proved here do **not** transfer
-as upper bounds to Turing-machine `Kt`. The faithful upgrade is a machine-checked
-DAG simulation over an explicit pointer-machine cost model (an open item in
-`COVERAGE.md`). A bit-priced clock is not a substitute: the bit measure `Bt` charges
-`Nat.size` of written values, so under the list encoding it prices the size of the
-encoding rather than the work performed (an unformalized observation).
+Consequently, concrete values and additive constants proved here (for example
+`Kt [] = 5`) are upper bounds for nothing on the Turing-machine side: only the direction
+`Kt ≤ Kt_M + c_M` is machine-checked. The faithful upgrade for the converse is a
+machine-checked DAG simulation by a Turing machine (an open item in `COVERAGE.md`). A
+bit-priced clock is not a substitute: the bit measure `Bt` charges `Nat.size` of written
+values, so under the list encoding it prices the size of the encoding rather than the
+work performed (an unformalized observation).
+
+## Turing-machine time
+
+`TimedKt/TuringMachine.lean` restates the deterministic multi-tape Turing machine of
+[CSLib](https://github.com/leanprover/cslib) (`Cslib/Computability/Machines/Turing/MultiTape`,
+after Papadimitriou §2.3 and §2.5), the model under cslib-frontier's Turing-machine-clocked
+`levinKt`; it is restated rather than imported because that library is on a newer toolchain.
+A machine has a read-only input tape whose head is clamped to one blank cell on either side,
+`k` two-way infinite work tapes, and a write-only output tape; a step reads the state and
+the head symbols and performs an action (move the input head, write and move on each work
+tape, emit at most one output symbol, change state or halt), and a halted configuration
+steps to itself. The transition function is primitive (CSLib derives it from a
+deterministic transition relation; `MultiTapeTM.ofTr` is the inverse construction).
+
+For a fixed machine `M` with finitely many states over the binary alphabet (blank extra),
+a program `p` and condition `y` are presented on the input tape as `frame p ++ y`, where
+`frame p` writes each bit behind a `true` marker and ends with `false` (cslib-frontier's
+`encPair encBits encBits` for its conditional `Kt`), and
+
+```
+tmKt M x y = min { |p| + ⌈log₂ t⌉ : M halts on frame p ++ y after t steps with output x }
+```
+
+(`TM.tmKt`; `TM.tmKtPlain M x = tmKt M x []`). The theorem (`Kt_cond_le_tmKt`,
+`TimedKt/TMBridge.lean`) is
+
+```
+∀ M, ∃ c, ∀ x y,  Kt_cond x y ≤ tmKt M x y + c
+```
+
+with the plain form `Kt_le_tmKtPlain`. It rests on a linear-time simulation
+(`TMSim.tmSim_spec`): one fixed `Code` maps `encode (p, y)` to `encode x` within `a·t + b`
+transitions whenever `M` halts on `frame p ++ y` after `t` steps with output `x`, for
+constants `a`, `b` depending only on `M`. Then the universal machine runs that code behind a
+constant unary prefix, and `⌈log₂ (a·t + b')⌉ ≤ ⌈log₂ t⌉ + O(1)`.
+
+How the simulation stays linear:
+
+* *One step in `O(1)` transitions* (`TMSim.step_spec`). Work tapes are two stacks of
+  `Nat.pair` (`pair a s` pushes, `unpair` pops, and the empty stack `0` pops to the blank `0`,
+  so blank tails are implicit). The state and the head symbols form a key, and a multiplexer
+  over a finite table (`RunLib.mux`) returns the encoded action; a halted configuration reads
+  the no-op action.
+* *Lazy input.* The input word `frame p ++ y` is never written out: a three-mode generator
+  produces its next cell from the list encodings of `p` and `y` in `O(1)` transitions using
+  the destructors of `TimedKt.list_destruct_const`, so input that the machine never reads
+  costs nothing.
+* *Unknown running time.* `rfind'` searches for the least `m` such that `M` has halted
+  after `2 ^ m` steps, each trial re-running the simulation from the start; then `2 ^ m`
+  steps are run once more and the output is decoded in `O(|x|)` transitions. The trials cost
+  `O(2 ^ m)` in total and `2 ^ m < 2t`.
+
+Guard against vacuity: a two-state copying machine with no work tapes prints `p` from
+`frame p ++ y` in `2|p| + 1` steps (`TM.copyTM_outputsAt`), so its `tmKt` is at most
+`|x| + ⌈log₂ (2|x| + 1)⌉` on every string, and the theorem instantiates to
+`Kt(x | y) ≤ |x| + ⌈log₂ (2|x| + 1)⌉ + c` (`Kt_cond_le_length_add_log`).
+
+What is **not** claimed: the converse (see above); a comparison with cslib-frontier's
+`levinKt` itself, whose program also describes the machine and whose clock counts the
+described machine's steps (the simulation here has constants depending on `M`, so this would
+need a `Code` interpreting machine descriptions with per-step cost polynomial in the
+description, giving an additive `O(log)` rather than `O(1)`); alphabets other than binary
+(the constants here are for the binary alphabet with blank). The constants `a`, `b`, `c` are
+proved to exist, not computed; they are very large, because the action table is indexed by
+nested `Nat.pair` keys.
 
 ## The conditioning theorem
 
@@ -495,8 +558,8 @@ count); and guards for the `Realization` hypothesis (the identity machine is rea
 and has complexity `|x|`; the computable machine `fastTimed` has no realization).
 
 **Not covered** by the trusted statement, and so checked only by the library build
-and the axiom gate: `K ≤ Kt`; the write and bit measures `Wt`, `Bt` and their
-triangles; attainment of the infimum; information transfer; the rate theorems; the
+and the axiom gate: the Turing-machine comparison `Kt_cond_le_tmKt` and its model;
+`K ≤ Kt`; the write and bit measures `Wt`, `Bt` and their triangles; attainment of the infimum; information transfer; the rate theorems; the
 randomized measure `rKt`; the static direction-independence theorem; the
 fuel-divergence theorems. The guard `fastTimed` shows only that `Realization` is a
 genuine restriction; that the invariance bound itself fails for an unrealized
@@ -522,11 +585,14 @@ Levin's `Kt` itself is formalized in Lean 4 in
 `Cslib.Kolmogorov.levinKt` in
 [`CslibFrontier/Computability/Kolmogorov/TimeBounded.lean`](https://github.com/cslib-community/cslib-frontier/blob/dd766ace6443f3b4e3207f3da4989df05d0a361e/CslibFrontier/Computability/Kolmogorov/TimeBounded.lean),
 with conditional `condLevinKt` in `Conditional.lean`. Its clock counts steps of the
-described multi-tape Turing machine, so that `Kt` is tied to Turing-machine time,
-which this package's structural clock is not. cslib-frontier proves, among other
+described multi-tape Turing machine, so that `Kt` is tied to Turing-machine time; this
+package's structural clock is tied to it in one direction only (`Kt_cond_le_tmKt`, for
+a fixed machine). cslib-frontier proves, among other
 results, `K ≤ Kt`, `Kt(x) ≤ |x| + O(log |x|)`, existence and runtime bounds for
 optimal witnesses, clock-preserving optimality of its universal machine over
-multi-tape machines, `MKtP ∈ EXP`, and `MINKT ∈ NP`. As far as we can tell it does
+multi-tape machines, `MKtP ∈ EXP`, and `MINKT ∈ NP`. This package's Turing-machine model
+(`TimedKt/TuringMachine.lean`) restates CSLib's multi-tape machine, on which cslib-frontier
+builds, and its conditional input encoding follows cslib-frontier's `encPair`. As far as we can tell it does
 not state conditioning `Kt(x | y) ≤ Kt(x) + c`, a triangle inequality for `Kt`, or
 write- or bit-priced measures. Corrections are welcome.
 

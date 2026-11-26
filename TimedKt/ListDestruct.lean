@@ -31,10 +31,9 @@ whose recursion variable is `≤ 2` is a constant-cost three-way branch (`sw3`, 
 ## Scope
 
 This is a statement about the unit-cost `Run` clock only (one transition per `Code` node, with
-`pair`/`unpair` on unbounded naturals at unit cost). It does **not** prove any relation between
-`Kt` and Turing-machine `Kt`; in particular, the informal direction `Kt ≤ Kt_TM + O(1)` still
-needs a linear-time simulation of a universal Turing machine inside one `Code` under doubling time
-budgets, which is not formalized here.
+`pair`/`unpair` on unbounded naturals at unit cost). It is the input-access step of the
+linear-time Turing-machine simulation in `TimedKt.TMSim` and `TimedKt.TMBridge`, which proves
+`Kt ≤ Kt_M + O(1)` for every fixed Turing machine `M` (`TimedKt.Kt_cond_le_tmKt`).
 -/
 
 open Nat.Partrec Nat

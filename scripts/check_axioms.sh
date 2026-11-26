@@ -42,6 +42,12 @@ THEOREMS=(
   TimedKt.nonNil_runsLe
   TimedKt.head_runsLe
   TimedKt.tail_runsLe
+  TimedKt.Kt_cond_le_tmKt
+  TimedKt.Kt_le_tmKtPlain
+  TimedKt.TMSim.tmSim_spec
+  TimedKt.TMSim.step_spec
+  TimedKt.TM.copyTM_outputsAt
+  TimedKt.Kt_cond_le_length_add_log
 )
 
 tmpdir="$(mktemp -d)"
