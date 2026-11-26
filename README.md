@@ -1,9 +1,7 @@
 # timed_kt — Levin-Style Timed Complexity in Lean 4
 
-To our knowledge, **the first machine-checked formalization of Levin's time-bounded
-Kolmogorov complexity (`Kt`) in any proof assistant** (see Related work below): a
-Lean 4 formalization of conditional time-bounded Kolmogorov complexity for
-bitstrings,
+A Lean 4 formalization of Levin's conditional time-bounded Kolmogorov complexity
+(`Kt`) for bitstrings,
 
 ```
 Kt_U(x | y) = min { |p| + ⌈log₂ t⌉ : U(p, y) outputs x in t transitions }
@@ -16,6 +14,15 @@ bitstring program, and `t` counts transitions of an explicit operational semanti
 neither constructor counts nor `Code.evaln` fuel enter the definition. The measure is
 Levin-style `Kt` **relative to this explicit structural clock**; its relation to
 Turing-machine time is not formalized here (see [What `t` measures](#what-t-measures)).
+
+This is not the first formalization of `Kt`: Levin's `Kt` and its conditional form
+are already in Lean 4, clocked by multi-tape Turing-machine steps, as
+[`Cslib.Kolmogorov.levinKt`](https://github.com/cslib-community/cslib-frontier/blob/dd766ace6443f3b4e3207f3da4989df05d0a361e/CslibFrontier/Computability/Kolmogorov/TimeBounded.lean)
+and `condLevinKt` in [cslib-frontier](https://github.com/cslib-community/cslib-frontier)
+(see [Related work](#related-work)). This package uses a different machine and clock,
+and adds the conditioning theorem `Kt(x | y) ≤ Kt(x)` with additive constant zero,
+the triangle inequality with explicit constants, and write- and bit-priced companion
+measures. To our knowledge, these three are not formalized elsewhere.
 
 The untimed algorithmic-information layer is Alexey Milovanov's
 [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
@@ -500,16 +507,28 @@ check is not a CI step.
 
 ## Related work
 
-Machine-checked algorithmic information theory has so far covered the *untimed*
-measures. Catt and Norrish formalize plain Kolmogorov complexity and its invariance
+Most machine-checked algorithmic information theory covers the *untimed* measures.
+Catt and Norrish formalize plain Kolmogorov complexity and its invariance
 theorem in HOL4 ([CPP 2021](https://dl.acm.org/doi/10.1145/3437992.3439921)); Forster,
 Kunze, and Lauermann formalize plain K in Coq via synthetic computability
 ([uds-psl/coq-kolmogorov-complexity](https://github.com/uds-psl/coq-kolmogorov-complexity));
 and the [`kolmogorov_complexity`](https://github.com/AlexeyMilovanov/kolmogorov-complexity-lean)
 Lean library this package builds on covers plain and prefix K, algorithmic
 probability, and algorithmic statistics. None of these define a time-bounded measure
-or prove a time-side simulation theorem. We are not aware of a prior machine-checked
-formalization of `Kt` in any proof assistant; corrections are welcome.
+or prove a time-side simulation theorem.
+
+Levin's `Kt` itself is formalized in Lean 4 in
+[cslib-frontier](https://github.com/cslib-community/cslib-frontier):
+`Cslib.Kolmogorov.levinKt` in
+[`CslibFrontier/Computability/Kolmogorov/TimeBounded.lean`](https://github.com/cslib-community/cslib-frontier/blob/dd766ace6443f3b4e3207f3da4989df05d0a361e/CslibFrontier/Computability/Kolmogorov/TimeBounded.lean),
+with conditional `condLevinKt` in `Conditional.lean`. Its clock counts steps of the
+described multi-tape Turing machine, so that `Kt` is tied to Turing-machine time,
+which this package's structural clock is not. cslib-frontier proves, among other
+results, `K ≤ Kt`, `Kt(x) ≤ |x| + O(log |x|)`, existence and runtime bounds for
+optimal witnesses, clock-preserving optimality of its universal machine over
+multi-tape machines, `MKtP ∈ EXP`, and `MINKT ∈ NP`. As far as we can tell it does
+not state conditioning `Kt(x | y) ≤ Kt(x) + c`, a triangle inequality for `Kt`, or
+write- or bit-priced measures. Corrections are welcome.
 
 ## License and attribution
 
